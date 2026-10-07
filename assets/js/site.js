@@ -172,6 +172,57 @@
 
   var article = document.getElementById('article');
 
+  // 스타일 예시(글 front matter page_style): 강의 HTML은 그대로 두고, 스타일 CSS가 고를 수 있게 구조에 class를 붙인다.
+  // 섹션(h1부터 다음 h1 앞까지)을 section.sx-sec으로 묶고, 캡처 자리와 캡션, 이어지는 ①② 단계를 div.sx-group으로 묶는다.
+  if (article && article.classList.contains('sx')) {
+    var isBlank = function (el) { return el.tagName === 'P' && el.textContent.replace(/ /g, '').trim() === ''; };
+    var isShot = function (el) { return el && el.tagName === 'P' && /^\[(화면 캡처|인포그래픽|이미지): /.test(el.textContent.trim()); };
+    var isCap = function (el) { return el && el.tagName === 'P' && el.textContent.trim().charAt(0) === '▲'; };
+    var stepMark = function (el) { var s = el && el.tagName === 'P' && el.querySelector(':scope > b:first-child > span'); return s && /^[①-⑳]$/.test(s.textContent) ? s : null; };
+    article.querySelectorAll('p').forEach(function (p) { if (isBlank(p)) p.remove(); });
+    var sec = null;
+    Array.prototype.slice.call(article.children).forEach(function (el) {
+      if (el.tagName === 'H1') {
+        sec = document.createElement('section'); sec.className = 'sx-sec';
+        article.insertBefore(sec, el);
+        var num = el.querySelector('span'); if (num) num.classList.add('sx-num');
+      }
+      if (sec) sec.appendChild(el);
+      if (el.tagName === 'P' && el.getAttribute('data-ke-size') === 'size14' && el.previousElementSibling && el.previousElementSibling.tagName === 'H1') el.classList.add('sx-sum');
+    });
+    var makeSteps = function (first) {
+      var ol = document.createElement('ol'); ol.className = 'sx-steps';
+      var p = first;
+      while (p && stepMark(p)) {
+        var next = p.nextElementSibling, mark = stepMark(p), li = document.createElement('li');
+        var n = document.createElement('span'); n.className = 'sx-n'; n.textContent = mark.textContent; n.setAttribute('data-d', String(mark.textContent.charCodeAt(0) - 0x245F));
+        mark.parentNode.remove();
+        var body = document.createElement('div'); body.className = 'sx-text'; body.innerHTML = p.innerHTML.replace(/^\s+/, '');
+        li.appendChild(n); li.appendChild(body); ol.appendChild(li); p.remove(); p = next;
+      }
+      return ol;
+    };
+    article.querySelectorAll('p').forEach(function (p) {
+      if (!p.isConnected || !isShot(p)) return;
+      var m = p.innerHTML.match(/^\s*\[(화면 캡처|인포그래픽|이미지): ([^\s—]+)\s*—\s*([\s\S]*)\]\s*$/);
+      var group = document.createElement('div'); group.className = 'sx-group';
+      var fig = document.createElement('figure'); fig.className = 'sx-shot';
+      fig.innerHTML = '<div class="sx-frame"><span class="sx-kind">' + (m ? m[1] : '') + '</span><span class="sx-id">' + (m ? m[2] : '') + '</span><span class="sx-desc">' + (m ? m[3] : p.innerHTML) + '</span></div>';
+      p.parentNode.insertBefore(group, p);
+      group.appendChild(fig);
+      var after = p.nextElementSibling; p.remove();
+      if (isCap(after)) {
+        var cap = document.createElement('figcaption'); cap.innerHTML = after.innerHTML.replace(/^\s*(▲|&#9650;)\s*/, '');
+        fig.appendChild(cap); var a2 = after.nextElementSibling; after.remove(); after = a2;
+      }
+      if (stepMark(after)) group.appendChild(makeSteps(after));
+      else group.classList.add('sx-solo');
+    });
+    article.querySelectorAll('p').forEach(function (p) {
+      if (p.isConnected && stepMark(p)) p.parentNode.insertBefore(makeSteps(p), p);
+    });
+  }
+
   // 마크다운 노트 첫 줄의 '# 제목'이 글 제목과 같으면 숨겨 제목이 두 번 보이지 않게 한다
   var postTitle = document.querySelector('.post-title');
   if (article && postTitle && article.classList.contains('md')) {
