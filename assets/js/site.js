@@ -13,8 +13,8 @@
   if (menuBtn) menuBtn.addEventListener('click', function () { setMenu(!body.classList.contains('menu-open')); });
   if (overlay) overlay.addEventListener('click', function () { setMenu(false); });
 
-  // 강의 목차 접기·펼치기: 대주제는 화살표 버튼, 소주제는 줄 전체가 버튼이다
-  document.querySelectorAll('.tree-toggle, .unit-btn').forEach(function (btn) {
+  // 강의 목차 접기·펼치기: 지금 대주제는 화살표 버튼, 소주제는 줄 전체가 버튼이다. 다른 대주제의 화살표는 링크라 건드리지 않는다
+  document.querySelectorAll('button.tree-toggle, .unit-btn').forEach(function (btn) {
     btn.addEventListener('click', function () {
       var item = btn.closest('.tree-item');
       var open = item.classList.toggle('open');
@@ -35,11 +35,12 @@
       });
     }
   } catch (e) {}
-  // 지금 읽는 강의가 사이드바 목록 안에서 보이게 한다
-  var curLec = document.querySelector('.lec-link.current');
-  if (curLec) {
-    var nav = document.querySelector('.side-nav');
-    if (nav && nav.scrollHeight > nav.clientHeight) nav.scrollTop = curLec.offsetTop - nav.clientHeight / 3;
+  // 사이드바 목록을 내려 강의 글에서는 지금 강의를 위에서 1/3쯤에, 대주제 화면에서는 지금 대주제를 위쪽에 보인다
+  var sideNav = document.querySelector('.side-nav');
+  var curItem = sideNav && sideNav.querySelector('.lec-link.current, .tree-link.current');
+  if (curItem && sideNav.scrollHeight > sideNav.clientHeight) {
+    var itemTop = curItem.getBoundingClientRect().top - sideNav.getBoundingClientRect().top + sideNav.scrollTop;
+    sideNav.scrollTop = itemTop - (curItem.classList.contains('lec-link') ? sideNav.clientHeight / 3 : 48);
   }
 
   // 검색 창: search.json을 처음 열 때 한 번 받아 제목·카테고리·본문에서 찾는다
