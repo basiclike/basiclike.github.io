@@ -222,7 +222,7 @@
       if (p.isConnected && stepMark(p)) p.parentNode.insertBefore(makeSteps(p), p);
     });
     // 접고 펴기: 섹션 머리(제목과 요약 줄) 오른쪽 버튼이나 머리 전체를 누른다. 원래 '더보기' 버튼은 CSS로 숨기고 그 버튼의 동작을 그대로 쓴다.
-    // 숨긴 버튼의 높이가 0이라 접힌 상자의 높이도 0이 된다. 접힌 섹션에는 안에 든 캡처, 단계, 코드 수를 보인다.
+    // 숨긴 버튼의 높이가 0이라 접힌 상자의 높이도 0이 된다.
     article.querySelectorAll('.sx-sec').forEach(function (s) {
       var h = s.querySelector(':scope > h1'), box = s.querySelector(':scope > div[data-ke-type="moreLess"]');
       if (!h || !box) return;
@@ -231,9 +231,6 @@
       var text = document.createElement('div'); text.className = 'sx-head-text';
       s.insertBefore(head, h); head.appendChild(text); text.appendChild(h);
       var sum = s.querySelector(':scope > .sx-sum'); if (sum) text.appendChild(sum);
-      var info = [], count = function (sel, name) { var n = box.querySelectorAll(sel).length; if (n) info.push(name + ' ' + n); };
-      count('.sx-shot', '캡처'); count('.sx-steps li', '단계'); count('pre', '코드');
-      if (info.length) { var meta = document.createElement('p'); meta.className = 'sx-meta'; meta.textContent = info.join(' · '); text.appendChild(meta); }
       var fold = document.createElement('button'); fold.type = 'button'; fold.className = 'sx-fold';
       fold.innerHTML = '<span class="sx-fold-label"></span><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
       head.appendChild(fold);
