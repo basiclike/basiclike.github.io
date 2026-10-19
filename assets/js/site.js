@@ -335,13 +335,17 @@
       });
     }
 
-    // 질문: 원고의 `> **❓ 질문**` 인용은 상자로 두지 않고 Q 표시를 단 질문 줄(q-line)로 바꾼다(사용자 결정, 2026-10-19)
+    // 질문: 원고의 `> **❓ 질문**` 인용은 상자로 두지 않고 말풍선 선 그림을 단 질문 줄(q-line)로 바꾼다(사용자 결정, 2026-10-19).
+    // 칸 안의 Q 글자는 섹션 번호 칸(채운 칸 안의 숫자)과 같아 보여 바탕 없는 선 그림으로 바꿨다
     lecture.querySelectorAll('blockquote').forEach(function (q) {
       var p = q.firstElementChild, st = p && p.tagName === 'P' ? p.firstElementChild : null;
       if (!st || st.tagName !== 'STRONG' || p.firstChild !== st || !/^❓/.test(st.textContent.trim())) return;
       q.classList.add('q-line');
       var mark = document.createElement('span');
-      mark.className = 'q-mark'; mark.setAttribute('aria-hidden', 'true'); mark.textContent = 'Q';
+      mark.className = 'q-mark'; mark.setAttribute('aria-hidden', 'true');
+      mark.innerHTML = '<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' +
+        '<path d="M12 3.6c4.7 0 8.4 3.3 8.4 7.4s-3.7 7.4-8.4 7.4c-1 0-2-.15-2.9-.43L4.6 19.9l1.2-3.7C4.4 14.9 3.6 13 3.6 11c0-4.1 3.7-7.4 8.4-7.4z"/>' +
+        '<path d="M9.9 9.1a2.2 2.2 0 0 1 4.3.6c0 1.5-2.2 1.8-2.2 3.2"/><path d="M12 15.6v.05"/></svg>';
       q.insertBefore(mark, p);
     });
   }
