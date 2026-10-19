@@ -429,10 +429,12 @@
       toc.closest('.post-wrap').classList.add('no-toc');
     } else {
       var ol = toc.querySelector('.toc-list');
+      var group = -1;
       heads.forEach(function (h, i) {
         if (!h.id) h.id = 'section-' + (i + 1);
         var li = document.createElement('li');
-        if (+h.tagName.charAt(1) > topLv) li.className = 'lv2';
+        if (+h.tagName.charAt(1) > topLv) li.className = 'lv2'; else group++;
+        li.setAttribute('data-group', group);
         var a = document.createElement('a');
         a.href = '#' + encodeURIComponent(h.id);
         a.textContent = h.textContent.trim();
@@ -465,6 +467,12 @@
       var cur = 0;
       heads.forEach(function (h, i) { if (h.offsetParent !== null && h.getBoundingClientRect().top < 140) cur = i; });
       tocLinks.forEach(function (a, i) { a.classList.toggle('active', i === cur); });
+      // 소제목은 지금 읽는 섹션 것만 펼친다. 섹션마다 소제목을 두면 목차가 화면보다 길어져 지금 위치가 칸 밖으로 숨기 때문이다(UR6)
+      var g = tocLinks[cur].parentNode.getAttribute('data-group');
+      tocLinks.forEach(function (a) {
+        var li = a.parentNode;
+        if (li.classList.contains('lv2')) li.classList.toggle('open', li.getAttribute('data-group') === g);
+      });
     }
   }
   window.addEventListener('scroll', function () {
