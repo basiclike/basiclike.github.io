@@ -13,6 +13,20 @@
   if (menuBtn) menuBtn.addEventListener('click', function () { setMenu(!body.classList.contains('menu-open')); });
   if (overlay) overlay.addEventListener('click', function () { setMenu(false); });
 
+  // 왼쪽 목차 접기(넓은 화면): 접은 상태를 이 브라우저에 기억해 다른 강의로 가도 남긴다(사용자 결정, 2026-10-19).
+  // 그리기 전에 html.side-closed를 붙이는 일은 _layouts/default.html head의 짧은 스크립트가 한다. 저장이 막히면 이 페이지에서만 접힌다
+  var root = document.documentElement;
+  var sideClose = document.querySelector('.side-close'), sideOpen = document.querySelector('.side-open');
+  function setSide(closed) {
+    root.classList.toggle('side-closed', closed);
+    if (sideClose) sideClose.setAttribute('aria-expanded', closed ? 'false' : 'true');
+    if (sideOpen) sideOpen.setAttribute('aria-expanded', closed ? 'false' : 'true');
+    try { if (closed) localStorage.setItem('site-side', 'closed'); else localStorage.removeItem('site-side'); } catch (e) {}
+  }
+  if (sideClose) sideClose.addEventListener('click', function () { setSide(true); if (sideOpen) sideOpen.focus(); });
+  if (sideOpen) sideOpen.addEventListener('click', function () { setSide(false); if (sideClose) sideClose.focus(); });
+  if (root.classList.contains('side-closed')) setSide(true);
+
   // 강의 목차 접기·펼치기: 지금 대주제는 화살표 버튼, 소주제는 줄 전체가 버튼이다. 다른 대주제의 화살표는 링크라 건드리지 않는다
   document.querySelectorAll('button.tree-toggle, .unit-btn').forEach(function (btn) {
     btn.addEventListener('click', function () {
@@ -291,10 +305,45 @@
         if (stepMark(after)) group.appendChild(makeSteps(after));
         else group.classList.add('sx-solo');
       });
+      // 캡처 없이 이어지는 ①② 단계: makeSteps가 단계 문단을 지우므로, 자리 표시를 먼저 넣고 만든 목록으로 바꾼다.
+      // 지운 문단 앞에 넣으려다 오류로 스크립트가 멈춰, 요약 줄과 소제목 번호가 빠진 강의가 있었다(2026-10-19)
       lecture.querySelectorAll('.sx-body > p').forEach(function (p) {
-        if (p.isConnected && stepMark(p)) p.parentNode.insertBefore(makeSteps(p), p);
+        if (!p.isConnected || !stepMark(p)) return;
+        var parent = p.parentNode, spot = document.createComment('steps');
+        parent.insertBefore(spot, p);
+        parent.replaceChild(makeSteps(p), spot);
+      });
+
+      // 섹션 요약 줄과 소제목 번호(골든 HTML의 구조만 참고했고, 모양은 사이트의 제목과 회색 글자 그대로다):
+      // 섹션의 첫 문단이 `→ `로 시작하면 섹션 제목 아래(접어도 보이는 자리)로 옮기고,
+      // 섹션 안의 h3에 N.M, h4에 N.M.K 번호를 붙인다. N은 섹션 번호(0부터)다
+      folds.forEach(function (s, i) {
+        var first = s._body.firstElementChild;
+        if (first && first.tagName === 'P' && /^\s*→\s/.test(first.textContent)) {
+          first.className = 'sx-lead';
+          s.querySelector('.sx-head-text').appendChild(first);
+        }
+        var m = 0, k = 0;
+        Array.prototype.forEach.call(s._body.children, function (el) {
+          if (el.tagName !== 'H3' && el.tagName !== 'H4') return;
+          if (el.tagName === 'H3') { m += 1; k = 0; } else { k += 1; }
+          var num = document.createElement('span'); num.className = 'sx-subnum';
+          num.textContent = el.tagName === 'H3' ? i + '.' + m : i + '.' + m + '.' + k;
+          el.insertBefore(document.createTextNode(' '), el.firstChild);
+          el.insertBefore(num, el.firstChild);
+        });
       });
     }
+
+    // 질문: 원고의 `> **❓ 질문**` 인용은 상자로 두지 않고 Q 표시를 단 질문 줄(q-line)로 바꾼다(사용자 결정, 2026-10-19)
+    lecture.querySelectorAll('blockquote').forEach(function (q) {
+      var p = q.firstElementChild, st = p && p.tagName === 'P' ? p.firstElementChild : null;
+      if (!st || st.tagName !== 'STRONG' || p.firstChild !== st || !/^❓/.test(st.textContent.trim())) return;
+      q.classList.add('q-line');
+      var mark = document.createElement('span');
+      mark.className = 'q-mark'; mark.setAttribute('aria-hidden', 'true'); mark.textContent = 'Q';
+      q.insertBefore(mark, p);
+    });
   }
   if (foldAll && folds.length) {
     foldAll.hidden = false;

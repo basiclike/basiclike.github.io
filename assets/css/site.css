@@ -32,7 +32,23 @@ kbd { font-family: var(--font); font-size: 11.5px; line-height: 18px; padding: 0
 
 /* 사이드바 */
 .sidebar { position: fixed; top: 0; bottom: 0; left: 0; z-index: 40; width: var(--side-w); display: flex; flex-direction: column; background: var(--bg-soft); border-right: 1px solid var(--line); }
-.side-head { padding: 28px 20px 14px; }
+.side-head { position: relative; padding: 28px 20px 14px; }
+
+/* 왼쪽 목차 접기(넓은 화면만): 접기 버튼은 사이드바 머리 오른쪽 위, 접힌 동안에는 화면 왼쪽 위에 펴기 버튼.
+   접은 상태(html.side-closed)는 site.js가 이 브라우저에 기억하고, _layouts/default.html head가 그리기 전에 붙인다 */
+.side-toggle { display: grid; place-items: center; width: 34px; height: 34px; border: 0; border-radius: 10px; background: none; color: var(--muted); cursor: pointer; transition: background .15s, color .15s; }
+.side-toggle:hover { background: var(--line-soft); color: var(--accent); }
+/* 접기 버튼은 사이드바 오른쪽 위 모서리에 둔다. 로고 글에 여백을 주면 설명 문장이 두 줄로 꺾인다고 사용자가 짚었다(2026-10-19) */
+.side-close { position: absolute; top: 6px; right: 6px; width: 30px; height: 30px; }
+.side-open { position: fixed; top: 16px; left: 16px; z-index: 41; display: none; border: 1px solid var(--line); background: var(--bg); box-shadow: var(--shadow); }
+@media (min-width: 1101px) {
+  .sidebar { transition: transform .25s ease, visibility 0s; }
+  .main { transition: margin-left .25s ease; }
+  /* 접힌 사이드바는 들어간 뒤 보이지 않게 해 Tab 키가 숨은 링크로 가지 않게 한다 */
+  html.side-closed .sidebar { transform: translateX(-100%); visibility: hidden; transition: transform .25s ease, visibility 0s .25s; }
+  html.side-closed .main { margin-left: 0; }
+  html.side-closed .side-open { display: grid; }
+}
 .brand { display: flex; align-items: center; gap: 12px; }
 .brand-avatar { flex: none; width: 48px; height: 48px; border-radius: 25%; object-fit: cover; background: #fff; box-shadow: var(--shadow); }
 .brand-text { display: flex; flex-direction: column; min-width: 0; }
@@ -282,6 +298,7 @@ body.search-open { overflow: hidden; }
   body.menu-open .overlay { display: block; position: fixed; inset: 0; z-index: 38; background: rgba(15, 23, 42, .38); }
   body.menu-open { overflow: hidden; }
   .main { margin-left: 0; }
+  .side-toggle { display: none; }
   .wrap, .post-wrap { padding: 0 28px; }
   .article :is(h1, h2, h3) { scroll-margin-top: 76px; }
 }
