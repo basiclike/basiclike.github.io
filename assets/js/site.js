@@ -118,7 +118,7 @@
       if (!data) { list.innerHTML = ''; label.textContent = ''; hint.textContent = '글 목록을 불러오는 중…'; return; }
       if (!terms.length) {
         list.innerHTML = data.slice(0, 6).map(function (p) { return item(p, []); }).join('');
-        label.textContent = data.length ? '최근 글' : '';
+        label.textContent = data.length ? '강의 목록' : '';
         hint.textContent = data.length ? '' : '아직 글이 없습니다.';
         return;
       }
@@ -257,7 +257,7 @@
 
     if (styled) {
       // 캡처: 이미지 하나뿐인 문단(![캡션](그림))은 그림과 캡션(alt)으로, 아직 그림이 없는 자리 표시 문단
-      // ([화면 캡처: 이름 — 설명] 다음 줄 ▲ 캡션)은 그림 틀로 만든다. 바로 뒤의 ①② 단계 문단은 같은 묶음(.sx-group)에 넣는다
+      // ([화면 캡처: 이름 — 설명], [삽화: 이름 — 설명. 프롬프트: 경로] 다음 줄 ▲ 캡션)은 그림 틀로 만든다. 삽화 자리의 프롬프트 경로는 제작용이라 보이지 않는다. 바로 뒤의 ①② 단계 문단은 같은 묶음(.sx-group)에 넣는다
       var stepMark = function (el) {
         var t = el && el.tagName === 'P' && el.firstChild && el.firstChild.nodeType === 3 ? el.firstChild.nodeValue.replace(/^\s+/, '') : '';
         return /^[①-⑳]/.test(t) ? t.charAt(0) : null;
@@ -278,7 +278,7 @@
       };
       var shot = function (p) {
         var img = p.children.length === 1 && p.firstElementChild.tagName === 'IMG' && p.textContent.trim() === '' ? p.firstElementChild : null;
-        var m = !img && p.innerHTML.match(/^\s*\[(화면 캡처|인포그래픽|이미지): ([^\s—]+)\s*—\s*([\s\S]*?)\]\s*(?:\n\s*((?:▲|&#9650;)[\s\S]*))?$/);
+        var m = !img && p.innerHTML.match(/^\s*\[(화면 캡처|인포그래픽|이미지|삽화): ([^\s—]+)\s*—\s*([\s\S]*?)\]\s*(?:\n\s*((?:▲|&#9650;)[\s\S]*))?$/);
         if (!img && !m) return null;
         var fig = document.createElement('figure'); fig.className = 'sx-shot';
         var cap = document.createElement('figcaption');
@@ -286,7 +286,7 @@
           fig.classList.add('sx-img'); fig.appendChild(img);
           cap.textContent = img.getAttribute('alt') || '';
         } else {
-          fig.innerHTML = '<div class="sx-frame"><span class="sx-kind">' + m[1] + '</span><span class="sx-id">' + m[2] + '</span><span class="sx-desc">' + m[3] + '</span></div>';
+          fig.innerHTML = '<div class="sx-frame"><span class="sx-kind">' + m[1] + '</span><span class="sx-id">' + m[2] + '</span><span class="sx-desc">' + m[3].replace(/\s*프롬프트:\s*[^\s<]+\s*$/, '') + '</span></div>';
           if (m[4]) cap.innerHTML = capText(m[4]);
         }
         var after = p.nextElementSibling;
@@ -477,6 +477,12 @@
         var li = a.parentNode;
         if (li.classList.contains('lv2')) li.classList.toggle('open', li.getAttribute('data-group') === g);
       });
+      // 소제목이 많아 목차가 칸보다 길면 칸을 움직여 지금 위치 항목이 칸 안에 보이게 한다(UR6)
+      var box = tocLinks[cur].closest('.toc-inner');
+      if (box && box.scrollHeight > box.clientHeight) {
+        var br = box.getBoundingClientRect(), ar = tocLinks[cur].getBoundingClientRect();
+        if (ar.top < br.top + 56 || ar.bottom > br.bottom - 32) box.scrollTop += ar.top - br.top - box.clientHeight / 3;
+      }
     }
   }
   window.addEventListener('scroll', function () {
