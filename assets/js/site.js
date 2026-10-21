@@ -348,6 +348,25 @@
         '<path d="M9.9 9.1a2.2 2.2 0 0 1 4.3.6c0 1.5-2.2 1.8-2.2 3.2"/><path d="M12 15.6v.05"/></svg>';
       q.insertBefore(mark, p);
     });
+
+    // 대화 줄: 원고의 `- **이름:** "말"` 글머리표는 이름 칩과 다음 줄의 큰 글씨 말로 된 대화 줄(say-line)로 바꾼다.
+    // 말이 본문 글씨와 같아 눈에 들어오지 않는다고 사용자가 짚었다(사용자 결정, 2026-10-22)
+    lecture.querySelectorAll('li').forEach(function (li) {
+      var st = li.firstElementChild;
+      if (!st || st.tagName !== 'STRONG' || li.firstChild !== st || !/:$/.test(st.textContent.trim())) return;
+      var rest = '';
+      for (var n = st.nextSibling; n; n = n.nextSibling) rest += n.textContent;
+      if (!/^\s*["“]/.test(rest)) return;
+      var say = document.createElement('span');
+      say.className = 'say-text';
+      while (st.nextSibling) say.appendChild(st.nextSibling);
+      if (say.firstChild && say.firstChild.nodeType === 3) say.firstChild.data = say.firstChild.data.replace(/^\s+/, '');
+      st.textContent = st.textContent.trim().replace(/:$/, '');
+      st.classList.add('say-who');
+      li.classList.add('say-line');
+      li.appendChild(say);
+      li.parentElement.classList.add('say-list');
+    });
   }
   if (foldAll && folds.length) {
     foldAll.hidden = false;
