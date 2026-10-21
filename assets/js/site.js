@@ -367,6 +367,32 @@
       li.appendChild(say);
       li.parentElement.classList.add('say-list');
     });
+
+    // 형광펜: 원고의 `==문장==`은 마크다운 변환이 글자 그대로 두므로, 코드 밖의 글자에서 찾아 형광펜(mark.hl)으로 바꾼다.
+    // 굵은 글씨는 결론, 형광펜은 꼭 기억할 문장으로 쓰임을 나눈다(사용자 결정, 2026-10-22)
+    var walker = document.createTreeWalker(lecture, NodeFilter.SHOW_TEXT, {
+      acceptNode: function (n) {
+        return n.data.indexOf('==') < 0 || n.parentElement.closest('pre, code') ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    var hlNodes = [];
+    while (walker.nextNode()) hlNodes.push(walker.currentNode);
+    hlNodes.forEach(function (n) {
+      var parts = n.data.split(/==([^=\n]+?)==/);
+      if (parts.length < 3) return;
+      var frag = document.createDocumentFragment();
+      parts.forEach(function (t, k) {
+        if (k % 2) {
+          var m = document.createElement('mark');
+          m.className = 'hl';
+          m.textContent = t;
+          frag.appendChild(m);
+        } else if (t) {
+          frag.appendChild(document.createTextNode(t));
+        }
+      });
+      n.parentNode.replaceChild(frag, n);
+    });
   }
   if (foldAll && folds.length) {
     foldAll.hidden = false;
