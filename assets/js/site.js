@@ -323,6 +323,18 @@
           first.className = 'sx-lead';
           s.querySelector('.sx-head-text').appendChild(first);
         }
+        // 더 알아보기: `#### 더 알아보기: …` 제목과 그 아래 글(다음 제목 앞까지)을 번호 없는 작은 참고 글(more-note)로 묶는다.
+        // 번호를 단 소제목으로 두면 본 흐름처럼 읽혀, 참고사항처럼 작게 보이게 해 달라고 사용자가 짚었다(사용자 결정, 2026-10-22)
+        Array.prototype.slice.call(s._body.children).forEach(function (el) {
+          if (el.tagName !== 'H4' || !/^\s*더 알아보기/.test(el.textContent)) return;
+          var note = document.createElement('div'); note.className = 'more-note';
+          el.parentNode.insertBefore(note, el);
+          el.classList.add('more-h');
+          var next = el;
+          while (next && !(next !== el && /^H[1-4]$/.test(next.tagName))) {
+            var after = next.nextElementSibling; note.appendChild(next); next = after;
+          }
+        });
         var m = 0, k = 0;
         Array.prototype.forEach.call(s._body.children, function (el) {
           if (el.tagName !== 'H3' && el.tagName !== 'H4') return;
