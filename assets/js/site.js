@@ -361,6 +361,14 @@
       q.insertBefore(mark, p);
     });
 
+    // 잇는 줄: 섹션 끝의 `> **↓ 이어서**` 인용은 상자로 두지 않고 옅은 구분선 아래 흐린 글자의 잇는 줄(go-line)로 그린다.
+    // 일반 문단은 본문과, 질문 줄은 할 일과 구분되지 않아 사용자가 전용 모양을 골랐다(사용자 결정, 2026-10-26)
+    lecture.querySelectorAll('blockquote').forEach(function (q) {
+      var p = q.firstElementChild, st = p && p.tagName === 'P' ? p.firstElementChild : null;
+      if (!st || st.tagName !== 'STRONG' || p.firstChild !== st || !/^↓/.test(st.textContent.trim())) return;
+      q.classList.add('go-line');
+    });
+
     // 대화 줄: 원고의 `- **이름:** "말"` 글머리표는 이름 칩과 다음 줄의 큰 글씨 말로 된 대화 줄(say-line)로 바꾼다.
     // 말이 본문 글씨와 같아 눈에 들어오지 않는다고 사용자가 짚었다(사용자 결정, 2026-10-22)
     lecture.querySelectorAll('li').forEach(function (li) {
