@@ -286,7 +286,34 @@
           fig.classList.add('sx-img'); fig.appendChild(img);
           cap.textContent = img.getAttribute('alt') || '';
         } else {
-          fig.innerHTML = '<div class="sx-frame"><span class="sx-kind">' + m[1] + '</span><span class="sx-id">' + m[2] + '</span><span class="sx-desc">' + m[3].replace(/\s*프롬프트:\s*[^\s<]+\s*$/, '') + '</span></div>';
+          var desc = m[3].replace(/\s*프롬프트:\s*[^\s<]+\s*$/, '');
+          if (m[1] === '이미지') {
+            // 이미지 자리: 자리 줄로 세 줄 프롬프트를 만들어 글상자로 보이고 복사 버튼을 둔다. 사용자가 그림을 만들 때
+            // 프롬프트 파일을 열지 않고 사이트에서 바로 복사해 쓰기 위해서다(lecture/specs/site/design.md "이미지 자리의 프롬프트")
+            var tmp = document.createElement('div'); tmp.innerHTML = desc;
+            var line = tmp.textContent.trim().replace(/\.?$/, '.');
+            var prompt = 'soft-anime-webtoon 화풍으로 이미지를 만들어줘.  내용은 다음 내용 정리해서 만들어줘\n' + line + '\n파일명은 ' + m[2];
+            fig.innerHTML = '<div class="sx-frame sx-has-prompt"><span class="sx-kind">' + m[1] + ' ' + m[2] + '</span><pre class="sx-prompt"></pre><button type="button" class="sx-copy">프롬프트 복사</button></div>';
+            fig.querySelector('.sx-prompt').textContent = prompt;
+            var copyBtn = fig.querySelector('.sx-copy');
+            copyBtn.addEventListener('click', function () {
+              var done = function () {
+                copyBtn.textContent = '복사했습니다';
+                setTimeout(function () { copyBtn.textContent = '프롬프트 복사'; }, 1500);
+              };
+              // 클립보드 쓰기가 막힌 브라우저에서는 숨긴 글상자를 골라 복사한다
+              var fallback = function () {
+                var ta = document.createElement('textarea'); ta.value = prompt; ta.setAttribute('readonly', '');
+                ta.style.position = 'absolute'; ta.style.left = '-9999px'; document.body.appendChild(ta); ta.select();
+                var ok = false; try { ok = document.execCommand('copy'); } catch (e) {}
+                ta.remove(); if (ok) done();
+              };
+              if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(prompt).then(done, fallback);
+              else fallback();
+            });
+          } else {
+            fig.innerHTML = '<div class="sx-frame"><span class="sx-kind">' + m[1] + '</span><span class="sx-id">' + m[2] + '</span><span class="sx-desc">' + desc + '</span></div>';
+          }
           if (m[4]) cap.innerHTML = capText(m[4]);
         }
         var after = p.nextElementSibling;
