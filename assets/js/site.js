@@ -404,7 +404,7 @@
           '쓰이는 곳: 강의 사이트 ' + lecTitle + (where ? '의 ' + where : '')];
         if (before) lines.push('앞 내용: ' + clip(before));
         if (after) lines.push('뒤 내용: ' + clip(after));
-        lines.push('내용: ' + fig._promptDesc, '', '전체 제목과 하단 설명은 넣지 마.');
+        lines.push('내용: ' + fig._promptDesc);
         fig.querySelector('.sx-prompt').textContent = lines.join('\n');
       });
     }
