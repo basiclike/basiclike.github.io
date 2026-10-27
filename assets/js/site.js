@@ -288,15 +288,15 @@
         } else {
           var desc = m[3].replace(/\s*프롬프트:\s*[^\s<]+\s*$/, '');
           if (m[1] === '이미지') {
-            // 이미지 자리: 자리 줄로 세 줄 프롬프트를 만들어 글상자로 보이고 복사 버튼을 둔다. 사용자가 그림을 만들 때
-            // 프롬프트 파일을 열지 않고 사이트에서 바로 복사해 쓰기 위해서다(lecture/specs/site/design.md "이미지 자리의 프롬프트")
+            // 이미지 자리: 프롬프트 글상자와 복사 버튼을 두고, 파일명은 글상자 위에 따로 크게 보인다. 프롬프트 글은 소제목 번호가
+            // 붙은 뒤 앞뒤 문단을 읽어 채운다(아래 fillPrompts). 사용자가 그림을 만들 때 프롬프트 파일을 열지 않고 사이트에서
+            // 바로 복사해 쓰기 위해서다(lecture/specs/site/design.md "이미지 자리의 프롬프트")
             var tmp = document.createElement('div'); tmp.innerHTML = desc;
-            var line = tmp.textContent.trim().replace(/\.?$/, '.');
-            var prompt = 'soft-anime-webtoon 화풍으로 이미지를 만들어줘.  내용은 다음 내용 정리해서 만들어줘\n' + line + '\n파일명은 ' + m[2];
-            fig.innerHTML = '<div class="sx-frame sx-has-prompt"><span class="sx-kind">' + m[1] + ' ' + m[2] + '</span><pre class="sx-prompt"></pre><button type="button" class="sx-copy">프롬프트 복사</button></div>';
-            fig.querySelector('.sx-prompt').textContent = prompt;
+            fig._promptDesc = tmp.textContent.trim().replace(/^\d+(\.\d+)*\s+[^.]*\.\s*/, '').replace(/\.?$/, '.');
+            fig.innerHTML = '<div class="sx-frame sx-has-prompt"><span class="sx-kind">' + m[1] + '</span><span class="sx-id">' + m[2] + '</span><pre class="sx-prompt"></pre><button type="button" class="sx-copy">프롬프트 복사</button></div>';
             var copyBtn = fig.querySelector('.sx-copy');
             copyBtn.addEventListener('click', function () {
+              var prompt = fig.querySelector('.sx-prompt').textContent;
               var done = function () {
                 copyBtn.textContent = '복사했습니다';
                 setTimeout(function () { copyBtn.textContent = '프롬프트 복사'; }, 1500);
@@ -371,6 +371,41 @@
           el.insertBefore(document.createTextNode(' '), el.firstChild);
           el.insertBefore(num, el.firstChild);
         });
+      });
+
+      // 이미지 자리의 프롬프트 글: 쓰이는 곳(강의와 소제목), 앞 내용과 뒤 내용(그 자리에 문단이 있을 때만), 내용을 채운다.
+      // 앞뒤 내용은 문단과 목록만 읽고 질문 줄, 이어서 줄, 그림과 자리, 참고 글은 건너뛴다
+      var textOf = function (el) {
+        if (!el || !/^(P|UL|OL)$/.test(el.tagName) || el.classList.contains('sx-lead')) return '';
+        return el.textContent.replace(/\s+/g, ' ').trim();
+      };
+      var clip = function (t) { return t.length > 150 ? t.slice(0, 150) + '…' : t; };
+      var lecTitle = (document.title.split(' · ')[0] || '').replace(/^(\d+강)\.\s*(.*)$/, '$1 "$2"');
+      lecture.querySelectorAll('.sx-shot').forEach(function (fig) {
+        if (!fig._promptDesc) return;
+        var group = fig.closest('.sx-group'), head = null, before = '', after = '', el, texts = [];
+        for (el = group.previousElementSibling; el; el = el.previousElementSibling) {
+          if (el.tagName === 'H3') { head = head || el; if (before) break; continue; }
+          if (/^H[1-2]$/.test(el.tagName)) break;
+          if (!before) before = textOf(el);
+          if (before && head) break;
+        }
+        for (el = group.nextElementSibling; el && texts.length < 2 && !/^H[1-3]$/.test(el.tagName); el = el.nextElementSibling) {
+          var t = textOf(el); if (t) texts.push(t);
+        }
+        after = texts.join(' ');
+        var where = '';
+        if (head) {
+          var n = head.querySelector('.sx-subnum');
+          var name = head.textContent.replace(n ? n.textContent : '', '').trim();
+          where = (n ? n.textContent + ' ' : '') + '"' + name + '" 소제목 그림';
+        }
+        var lines = ['soft-anime-webtoon 기준 화풍으로 이미지를 만들어줘.', '',
+          '쓰이는 곳: 강의 사이트 ' + lecTitle + (where ? '의 ' + where : '')];
+        if (before) lines.push('앞 내용: ' + clip(before));
+        if (after) lines.push('뒤 내용: ' + clip(after));
+        lines.push('내용: ' + fig._promptDesc, '', '전체 제목과 하단 설명은 넣지 마.');
+        fig.querySelector('.sx-prompt').textContent = lines.join('\n');
       });
     }
 
