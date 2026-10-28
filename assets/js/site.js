@@ -295,6 +295,7 @@
             var descText = tmp.textContent.trim();
             // 설명 맨 앞의 종류(장면 그림., 기술 그림.)로 스타일 줄을 고르고, 종류와 섹션 제목을 뗀 나머지를 내용으로 쓴다(작업 261028-09)
             fig._promptTech = /^기술 그림\./.test(descText);
+            fig._promptId = m[2];
             fig._promptDesc = descText.replace(/^(장면|기술) 그림\.\s*/, '').replace(/^\d+(\.\d+)*\s+[^.]*\.\s*/, '').replace(/\.?$/, '.');
             fig.innerHTML = '<div class="sx-frame sx-has-prompt"><span class="sx-kind">' + m[1] + '</span><span class="sx-id">' + m[2] + '</span><pre class="sx-prompt"></pre><button type="button" class="sx-copy">프롬프트 복사</button></div>';
             var copyBtn = fig.querySelector('.sx-copy');
@@ -408,6 +409,7 @@
         if (before) lines.push('앞 내용: ' + clip(before));
         if (after) lines.push('뒤 내용: ' + clip(after));
         lines.push('내용: ' + fig._promptDesc);
+        lines.push('파일명은 ' + fig._promptId);
         fig.querySelector('.sx-prompt').textContent = lines.join('\n');
       });
     }
