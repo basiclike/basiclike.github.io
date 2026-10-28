@@ -423,6 +423,11 @@
         lines.push('저장 위치: ' + PROMPT_ROOT + '\\' + slug + '\\5-lessons\\images\\raw-captures\\' + lid + '\\' + fig._promptId + '.png');
         fig.querySelector('.sx-prompt').textContent = lines.join('\n');
       });
+      // 소주제별 프롬프트 파일에 Claude가 쓴 글이 있는 이미지 자리는 그 글을 그대로 보인다(레이아웃이 SX_PROMPTS로 넣는다)
+      lecture.querySelectorAll('.sx-shot').forEach(function (fig) {
+        var text = fig._promptId && window.SX_PROMPTS && window.SX_PROMPTS[fig._promptId];
+        if (text) fig.querySelector('.sx-prompt').textContent = text;
+      });
     }
 
     // 질문: 원고의 `> **❓ 질문**` 인용은 상자로 두지 않고 말풍선 선 그림을 단 질문 줄(q-line)로 바꾼다(사용자 결정, 2026-10-19).
