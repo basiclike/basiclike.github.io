@@ -292,7 +292,10 @@
             // 붙은 뒤 앞뒤 문단을 읽어 채운다(아래 fillPrompts). 사용자가 그림을 만들 때 프롬프트 파일을 열지 않고 사이트에서
             // 바로 복사해 쓰기 위해서다(lecture/specs/site/design.md "이미지 자리의 프롬프트")
             var tmp = document.createElement('div'); tmp.innerHTML = desc;
-            fig._promptDesc = tmp.textContent.trim().replace(/^\d+(\.\d+)*\s+[^.]*\.\s*/, '').replace(/\.?$/, '.');
+            var descText = tmp.textContent.trim();
+            // 설명 맨 앞의 종류(장면 그림., 기술 그림.)로 스타일 줄을 고르고, 종류와 섹션 제목을 뗀 나머지를 내용으로 쓴다(작업 261028-09)
+            fig._promptTech = /^기술 그림\./.test(descText);
+            fig._promptDesc = descText.replace(/^(장면|기술) 그림\.\s*/, '').replace(/^\d+(\.\d+)*\s+[^.]*\.\s*/, '').replace(/\.?$/, '.');
             fig.innerHTML = '<div class="sx-frame sx-has-prompt"><span class="sx-kind">' + m[1] + '</span><span class="sx-id">' + m[2] + '</span><pre class="sx-prompt"></pre><button type="button" class="sx-copy">프롬프트 복사</button></div>';
             var copyBtn = fig.querySelector('.sx-copy');
             copyBtn.addEventListener('click', function () {
@@ -400,7 +403,7 @@
           var name = head.textContent.replace(n ? n.textContent : '', '').trim();
           where = (n ? n.textContent + ' ' : '') + '"' + name + '" 소제목 그림';
         }
-        var lines = ['soft-anime-webtoon 기준 화풍으로 이미지를 만들어줘.', '',
+        var lines = [fig._promptTech ? '기술 교재형 일러스트(Tech textbook) 지침으로 이미지를 만들어줘.' : 'soft-anime-webtoon 기준 화풍으로 이미지를 만들어줘.', '',
           '쓰이는 곳: 강의 사이트 ' + lecTitle + (where ? '의 ' + where : '')];
         if (before) lines.push('앞 내용: ' + clip(before));
         if (after) lines.push('뒤 내용: ' + clip(after));
@@ -505,6 +508,37 @@
     w.className = 'table-wrap';
     t.parentNode.insertBefore(w, t);
     w.appendChild(t);
+  });
+
+  // 표의 짧은 칸 맞추기: 가장 긴 글(머리 칸 포함)이 SHORT_CELL자 이하인 칸은 그 글이 한 줄에 드는 너비만 쓰고,
+  // 나머지 칸은 table-layout: fixed가 남은 너비를 같게 나눈다. 모든 칸이 짧거나 길면 모든 칸을 같게 둔다(작업 261028-09)
+  var SHORT_CELL = 8;
+  var measure = document.createElement('canvas').getContext('2d');
+  document.querySelectorAll('.article table').forEach(function (t) {
+    if (!t.rows.length || t.querySelector('colgroup')) return;
+    var n = t.rows[0].cells.length, need = [], short = 0;
+    for (var c = 0; c < n; c++) {
+      var len = 0, px = 0;
+      for (var r = 0; r < t.rows.length; r++) {
+        var cell = t.rows[r].cells[c];
+        if (!cell) continue;
+        var text = cell.textContent.trim(), cs = getComputedStyle(cell);
+        len = Math.max(len, text.length);
+        measure.font = cs.fontWeight + ' ' + cs.fontSize + ' ' + cs.fontFamily;
+        px = Math.max(px, measure.measureText(text).width + parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight) + 4);
+      }
+      need.push(len <= SHORT_CELL ? px : 0);
+      if (len <= SHORT_CELL) short++;
+    }
+    if (short === 0 || short === n) return;
+    var base = parseFloat(getComputedStyle(t).fontSize);
+    var cg = document.createElement('colgroup');
+    need.forEach(function (px) {
+      var col = document.createElement('col');
+      if (px) col.style.width = (px / base).toFixed(2) + 'em';
+      cg.appendChild(col);
+    });
+    t.insertBefore(cg, t.firstChild);
   });
 
   // 코드 색: 코드 블록의 language-<이름> class를 highlight.js 언어 이름으로 바꾼 뒤 칠하고 복사 버튼을 단다
