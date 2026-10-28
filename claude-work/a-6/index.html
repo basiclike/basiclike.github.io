@@ -1,0 +1,956 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="hex">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script>try{var t=localStorage.getItem('site-theme');if(t==='paper'||t==='dark')document.documentElement.setAttribute('data-theme',t);if(localStorage.getItem('site-side')==='closed')document.documentElement.classList.add('side-closed');}catch(e){}</script>
+  <title>6강. Artifacts와 Docs로 보면서 고치기 · BasicLike</title>
+  <meta name="description" content="답, Artifacts, Docs가 어떻게 다른지 알아보고, Docs에서 고른 부분만 Claude에게 고치게 한 뒤 링크로 함께 고치고 Word와 Markdown으로 내보내 봅니다.">
+  
+
+  <link rel="icon" href="/assets/img/favicon-32.png" sizes="32x32" type="image/png">
+  <link rel="icon" href="/assets/img/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/vs2015.min.css">
+  
+  <link rel="stylesheet" href="/assets/css/site.css?v=fa20369e">
+  <link rel="stylesheet" href="/assets/css/lecture.css?v=fa20369e">
+  <link rel="stylesheet" href="/assets/css/course.css?v=fa20369e">
+  <link rel="stylesheet" href="/assets/css/styles/common.css?v=fa20369e">
+  <link rel="stylesheet" href="/assets/css/styles/cards.css?v=fa20369e">
+  <link rel="stylesheet" href="/assets/css/themes/hex.css?v=fa20369e">
+  <link rel="stylesheet" href="/assets/css/themes/paper.css?v=fa20369e">
+  <link rel="stylesheet" href="/assets/css/themes/dark.css?v=fa20369e">
+</head>
+<body class="post">
+  <a class="skip" href="#content">본문으로 건너뛰기</a>
+  <header class="topbar">
+    <button class="icon-btn menu-btn" type="button" aria-label="메뉴 열기" aria-controls="sidebar" aria-expanded="false">
+      <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    </button>
+    <a class="topbar-brand" href="/"><img class="img-main" src="/assets/img/logo.svg" alt=""><img class="img-ink" src="/assets/img/topics-ink/logo.svg" alt="" loading="lazy"><span>BasicLike</span></a>
+    <button class="icon-btn search-open" type="button" aria-label="강의 검색" aria-controls="search">
+      <svg viewBox="0 0 24 24" width="21" height="21" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M20 20l-3.5-3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    </button>
+  </header>
+  <aside class="sidebar" id="sidebar" aria-label="사이드바">
+  <div class="side-head">
+    <a class="brand" href="/">
+      <img class="brand-avatar img-main" src="/assets/img/logo.svg" alt=""><img class="brand-avatar img-ink" src="/assets/img/topics-ink/logo.svg" alt="" loading="lazy">
+      <span class="brand-text">
+        <strong class="brand-name">BasicLike</strong>
+        <span class="brand-desc">Claude와 함께 배우는 개발 강의</span>
+      </span>
+    </a>
+    <button class="side-toggle side-close" type="button" aria-controls="sidebar" aria-expanded="true" aria-label="왼쪽 목차 접기" title="왼쪽 목차 접기"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="15" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M9.5 4.5v15M16 10l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    <button class="side-search search-open" type="button" aria-controls="search">
+      <svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M20 20l-3.5-3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <span>강의 검색</span><kbd>/</kbd>
+    </button>
+  </div>
+  <nav class="side-nav" aria-label="강의 목차">
+    <a class="nav-link" href="/">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10.5 12 4l8 6.5V19a1 1 0 0 1-1 1h-4.5v-6h-5v6H5a1 1 0 0 1-1-1z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+      <span>홈</span>
+    </a>
+    <a class="nav-link" href="/archive/">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <span>전체 강의</span><span class="count">59</span>
+    </a>
+    <a class="nav-link" href="/prep/">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5h10M9 12h10M9 19h10M4 5l1 1 2-2M4 12l1 1 2-2M4 19l1 1 2-2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span>준비</span><span class="count">9</span>
+    </a>
+    <p class="nav-label">강의 목차</p>
+    <ul class="tree">
+      <li class="tree-item" style="--c: #0f9d76">
+        <div class="tree-row">
+          <a class="tree-link" href="/path/" title="1. 개발자로 가는 길"><img class="tree-icon img-main" src="/assets/img/topics/book.svg" alt=""><img class="tree-icon img-ink" src="/assets/img/topics-ink/book.svg" alt="" loading="lazy"><span class="tree-name">1. 개발자로 가는 길</span><span class="count">16</span></a>
+          <a class="tree-toggle" href="/path/" tabindex="-1" aria-hidden="true" title="개발자로 가는 길 소주제와 강의 보기"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+        </div>
+      </li>
+      <li class="tree-item" style="--c: #e0703f">
+        <div class="tree-row">
+          <a class="tree-link" href="/claude/" title="2. Claude 시작하기"><img class="tree-icon img-main" src="/assets/img/topics/claude.svg" alt=""><img class="tree-icon img-ink" src="/assets/img/topics-ink/claude.svg" alt="" loading="lazy"><span class="tree-name">2. Claude 시작하기</span><span class="count">15</span></a>
+          <a class="tree-toggle" href="/claude/" tabindex="-1" aria-hidden="true" title="Claude 시작하기 소주제와 강의 보기"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+        </div>
+      </li>
+      <li class="tree-item ext" style="--c: #4c5bd4">
+        <div class="tree-row">
+          <a class="tree-link" href="https://basiclike.tistory.com/category/GitHub" target="_blank" rel="noopener" title="3. GitHub 강의를 티스토리에서 엽니다"><img class="tree-icon img-main" src="/assets/img/topics/github.svg" alt=""><img class="tree-icon img-ink" src="/assets/img/topics-ink/github.svg" alt="" loading="lazy"><span class="tree-name">3. GitHub</span><svg class="ext-icon" viewBox="0 0 24 24" width="14" height="14" aria-label="새 탭"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+        </div>
+      </li>
+      <li class="tree-item open" style="--c: #b8479a">
+        <div class="tree-row">
+          <a class="tree-link" href="/claude-work/" title="4. Claude로 업무하기"><img class="tree-icon img-main" src="/assets/img/topics/doc.svg" alt=""><img class="tree-icon img-ink" src="/assets/img/topics-ink/doc.svg" alt="" loading="lazy"><span class="tree-name">4. Claude로 업무하기</span><span class="count">28</span></a>
+          <button class="tree-toggle" type="button" aria-label="Claude로 업무하기 접기" aria-expanded="true"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        </div>
+        <ul class="tree-sub">
+          <li class="tree-item unit open">
+            <button class="unit-btn" type="button" aria-expanded="true" title="A. 조사하고 문서로 받기"><span class="unit-code">A</span><span class="unit-name">조사하고 문서로 받기</span><svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+            <ul class="tree-sub lec-list">
+              <li><a class="lec-link" href="/claude-work/a-1/" title="1강. 데스크톱 앱 대화에 일 맡기기: 폴더, 승인, 안전"><span class="lec-code">1강</span><span class="lec-name">데스크톱 앱 대화에 일 맡기기: 폴더, 승인, 안전</span></a></li>
+              <li><a class="lec-link" href="/claude-work/a-2/" title="2강. 웹에서 찾게 하고 출처 대조하기"><span class="lec-code">2강</span><span class="lec-name">웹에서 찾게 하고 출처 대조하기</span></a></li>
+              <li><a class="lec-link" href="/claude-work/a-3/" title="3강. Research로 조사 보고서 받기"><span class="lec-code">3강</span><span class="lec-name">Research로 조사 보고서 받기</span></a></li>
+              <li><a class="lec-link" href="/claude-work/a-4/" title="4강. 파일과 사진 올려 정리하기"><span class="lec-code">4강</span><span class="lec-name">파일과 사진 올려 정리하기</span></a></li>
+              <li><a class="lec-link" href="/claude-work/a-5/" title="5강. 결과를 Word, Excel, PowerPoint 파일로 받기"><span class="lec-code">5강</span><span class="lec-name">결과를 Word, Excel, PowerPoint 파일로 받기</span></a></li>
+              <li><a class="lec-link current" href="/claude-work/a-6/" title="6강. Artifacts와 Docs로 보면서 고치기"><span class="lec-code">6강</span><span class="lec-name">Artifacts와 Docs로 보면서 고치기</span></a></li>
+            </ul>
+          </li>
+          <li class="tree-item unit">
+            <button class="unit-btn" type="button" aria-expanded="false" title="B. 한글 문서 다루기"><span class="unit-code">B</span><span class="unit-name">한글 문서 다루기</span><svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+            <ul class="tree-sub lec-list">
+              <li><a class="lec-link" href="/claude-work/b-1/" title="7강. HWP와 HWPX는 무엇이 다른가"><span class="lec-code">7강</span><span class="lec-name">HWP와 HWPX는 무엇이 다른가</span></a></li>
+              <li><a class="lec-link" href="/claude-work/b-2/" title="8강. 한글 문서 Skill로 HWPX 받기"><span class="lec-code">8강</span><span class="lec-name">한글 문서 Skill로 HWPX 받기</span></a></li>
+              <li><a class="lec-link" href="/claude-work/b-3/" title="9강. HWPX 양식 채우고 직접 확인하기"><span class="lec-code">9강</span><span class="lec-name">HWPX 양식 채우고 직접 확인하기</span></a></li>
+            </ul>
+          </li>
+          <li class="tree-item unit">
+            <button class="unit-btn" type="button" aria-expanded="false" title="C. 마크다운과 Obsidian으로 기록하기"><span class="unit-code">C</span><span class="unit-name">마크다운과 Obsidian으로 기록하기</span><svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+            <ul class="tree-sub lec-list">
+              <li><a class="lec-link" href="/claude-work/c-1/" title="10강. 글자만 담긴 파일과 마크다운"><span class="lec-code">10강</span><span class="lec-name">글자만 담긴 파일과 마크다운</span></a></li>
+              <li><a class="lec-link" href="/claude-work/c-2/" title="11강. 마크다운 문법과 Claude의 답"><span class="lec-code">11강</span><span class="lec-name">마크다운 문법과 Claude의 답</span></a></li>
+              <li><a class="lec-link" href="/claude-work/c-3/" title="12강. Obsidian으로 기록 폴더 만들기"><span class="lec-code">12강</span><span class="lec-name">Obsidian으로 기록 폴더 만들기</span></a></li>
+              <li><a class="lec-link" href="/claude-work/c-4/" title="13강. 기록 폴더를 대화에 연결해 노트로 답 받기"><span class="lec-code">13강</span><span class="lec-name">기록 폴더를 대화에 연결해 노트로 답 받기</span></a></li>
+            </ul>
+          </li>
+          <li class="tree-item unit">
+            <button class="unit-btn" type="button" aria-expanded="false" title="D. 프로젝트와 Skill로 반복 줄이기"><span class="unit-code">D</span><span class="unit-name">프로젝트와 Skill로 반복 줄이기</span><svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+            <ul class="tree-sub lec-list">
+              <li><a class="lec-link" href="/claude-work/d-1/" title="14강. Project에 자료와 지시 모으기"><span class="lec-code">14강</span><span class="lec-name">Project에 자료와 지시 모으기</span></a></li>
+              <li><a class="lec-link" href="/claude-work/d-2/" title="15강. Skill은 문장으로 된 지시다: 만들기 전에 묻기 Skill"><span class="lec-code">15강</span><span class="lec-name">Skill은 문장으로 된 지시다: 만들기 전에 묻기 Skill</span></a></li>
+              <li><a class="lec-link" href="/claude-work/d-3/" title="16강. 끝났다고 하기 전에 확인하기 Skill"><span class="lec-code">16강</span><span class="lec-name">끝났다고 하기 전에 확인하기 Skill</span></a></li>
+              <li><a class="lec-link" href="/claude-work/d-4/" title="17강. Skill 고치고 공유하기"><span class="lec-code">17강</span><span class="lec-name">Skill 고치고 공유하기</span></a></li>
+              <li><a class="lec-link" href="/claude-work/d-5/" title="18강. 공개 Skill 찾아 읽고 가져오기"><span class="lec-code">18강</span><span class="lec-name">공개 Skill 찾아 읽고 가져오기</span></a></li>
+              <li><a class="lec-link" href="/claude-work/d-6/" title="19강. 반복 작업 예약하기"><span class="lec-code">19강</span><span class="lec-name">반복 작업 예약하기</span></a></li>
+            </ul>
+          </li>
+          <li class="tree-item unit">
+            <button class="unit-btn" type="button" aria-expanded="false" title="E. 외부 서비스와 연결하기"><span class="unit-code">E</span><span class="unit-name">외부 서비스와 연결하기</span><svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+            <ul class="tree-sub lec-list">
+              <li><a class="lec-link" href="/claude-work/e-1/" title="20강. Google Drive와 Gmail 연결하기"><span class="lec-code">20강</span><span class="lec-name">Google Drive와 Gmail 연결하기</span></a></li>
+              <li><a class="lec-link" href="/claude-work/e-2/" title="21강. Google Docs와 Sheets로 만들고 고치기"><span class="lec-code">21강</span><span class="lec-name">Google Docs와 Sheets로 만들고 고치기</span></a></li>
+              <li><a class="lec-link" href="/claude-work/e-3/" title="22강. Google Calendar로 일정 잡고 일정표 그리기"><span class="lec-code">22강</span><span class="lec-name">Google Calendar로 일정 잡고 일정표 그리기</span></a></li>
+              <li><a class="lec-link" href="/claude-work/e-4/" title="23강. 휴대전화 클로바노트로 녹음해 Claude에 넘기기"><span class="lec-code">23강</span><span class="lec-name">휴대전화 클로바노트로 녹음해 Claude에 넘기기</span></a></li>
+              <li><a class="lec-link" href="/claude-work/e-5/" title="24강. 요약해 회의록으로 만들고 Drive에 정리하기"><span class="lec-code">24강</span><span class="lec-name">요약해 회의록으로 만들고 Drive에 정리하기</span></a></li>
+              <li><a class="lec-link" href="/claude-work/e-6/" title="25강. 브라우저와 computer use로 일 맡기기"><span class="lec-code">25강</span><span class="lec-name">브라우저와 computer use로 일 맡기기</span></a></li>
+              <li><a class="lec-link" href="/claude-work/e-7/" title="26강. 휴대전화로 맡기고 음성으로 말하기"><span class="lec-code">26강</span><span class="lec-name">휴대전화로 맡기고 음성으로 말하기</span></a></li>
+            </ul>
+          </li>
+          <li class="tree-item unit">
+            <button class="unit-btn" type="button" aria-expanded="false" title="F. 기획하기"><span class="unit-code">F</span><span class="unit-name">기획하기</span><svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+            <ul class="tree-sub lec-list">
+              <li><a class="lec-link" href="/claude-work/f-1/" title="27강. 문제 정의하기"><span class="lec-code">27강</span><span class="lec-name">문제 정의하기</span></a></li>
+              <li><a class="lec-link" href="/claude-work/f-2/" title="28강. 기획서, 요구사항, 순서도 쓰기"><span class="lec-code">28강</span><span class="lec-name">기획서, 요구사항, 순서도 쓰기</span></a></li>
+            </ul>
+          </li>
+        </ul>
+      </li>
+    </ul>
+  </nav>
+  <div class="side-foot">
+    <div class="theme-pick" role="group" aria-label="화면 테마">
+      <button class="theme-opt" type="button" data-theme-value="hex" aria-pressed="true"><i class="theme-swatch"></i>헥사</button>
+      <button class="theme-opt" type="button" data-theme-value="paper" aria-pressed="false"><i class="theme-swatch"></i>문서</button>
+      <button class="theme-opt" type="button" data-theme-value="dark" aria-pressed="false"><i class="theme-swatch"></i>다크</button>
+    </div>
+    <a href="https://basiclike.tistory.com/" target="_blank" rel="noopener"><span>이전 강의 자료(티스토리)</span></a>
+    <button class="logout-btn" type="button" hidden>로그아웃(이 기기에서 비밀번호 지우기)</button>
+  </div>
+</aside>
+
+  <button class="side-toggle side-open" type="button" aria-controls="sidebar" aria-expanded="false" aria-label="왼쪽 목차 펴기" title="왼쪽 목차 펴기"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="15" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M9.5 4.5v15M14 10l2 2-2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+  <div class="overlay" id="overlay"></div>
+  <main class="main" id="content">
+    <div class="progress" aria-hidden="true"><span></span></div>
+<div class="post-wrap">
+  <article class="post">
+    <header class="post-head" style="--c: #b8479a">
+      <nav class="crumbs" aria-label="위치">
+        <a href="/">홈</a>
+        <span class="sep">/</span><a href="/claude-work/">4. Claude로 업무하기</a>
+        <span class="sep">/</span><a href="/claude-work/#unit-a">A. 조사하고 문서로 받기</a>
+      </nav>
+      <h1 class="post-title">6강. Artifacts와 Docs로 보면서 고치기</h1>
+      <p class="post-meta">
+        <span class="meta-badge nature">실습 강의</span>
+        <span class="meta-badge time" title="예상 학습 시간">&#9201; 약 45분</span>
+        <button class="fold-all" type="button" hidden>모두 접기</button>
+      </p>
+    </header>
+    <div id="article" class="article sx style-cards">
+      <h2 id="학습-목표">학습 목표</h2>
+
+<p>5강에서는 Claude가 만든 Word, Excel, PowerPoint 파일을 열어 요청과 맞춰 보고, 고칠 곳만 고치게 했습니다.<br />
+이번 강에서는 파일을 받아 오가지 않고, Claude가 만든 글을 한 장의 문서로 두고 보면서 고쳐 봅니다.</p>
+
+<ul>
+  <li>긴 답을 조금 고쳐 달라고 했는데 새 답이 또 오면, 어느 답이 마지막 판이고 고치라고 하지 않은 곳이 그대로인지 어떻게 알 수 있을까요?</li>
+  <li>대화의 답, 아티팩트, Docs는 어디에 저장되고 누구와 함께 고칠 수 있는지 알아봅시다.</li>
+  <li>문서에서 고칠 문단과 줄만 골라 맡기면 다른 곳이 정말 그대로인지 직접 확인해 봅시다.</li>
+  <li>링크를 받은 팀원은 내 문서를 어디까지 고칠 수 있는지 알아봅시다.</li>
+  <li>함께 고친 조사 요약을 Markdown 파일로 꺼내 키오스크 폴더에 둬 봅시다.</li>
+</ul>
+
+<h2 id="고친-답이-새-답으로-오는-불편">고친 답이 새 답으로 오는 불편</h2>
+
+<p>→ 대화에 다시 요청하면 고친 결과가 어떻게 돌아오는지 보고, 한 장의 문서가 왜 필요한지 생각해 봅니다.</p>
+
+<h3 id="세-번째-답에서-길을-잃은-직원-a">세 번째 답에서 길을 잃은 직원 A</h3>
+
+<p>사무실의 직원 A가 팀 행사 안내문을 Claude에게 받았다고 해 봅시다.<br />
+일정 표와 날마다 할 일, 준비물까지 화면을 두 번 내려야 끝나는 긴 답입니다.<br />
+다 읽고 나니 첫날 일정 문단이 너무 길었습니다.</p>
+
+<p>직원 A는 "첫날 문단만 짧게 줄여 줘"라고 보냈습니다.<br />
+그러자 Claude가 새 답을 썼고, 직원 A는 위의 답과 아래의 답을 번갈아 내리며 무엇이 바뀌었는지 찾았습니다.<br />
+준비물 한 줄을 더해 달라고 하자 또 새 답이 왔습니다.</p>
+
+<p>세 번째 답을 받았을 때 직원 A는 헷갈렸습니다.<br />
+어느 답이 마지막 판인지, 첫날 문단을 줄인 것이 마지막 답에도 남아 있는지 알 수 없었습니다.</p>
+
+<h3 id="고친-결과는-앞의-답-아래에-쌓입니다">고친 결과는 앞의 답 아래에 쌓입니다</h3>
+
+<p>5강에서 여러분은 Claude에게 Word, Excel, PowerPoint 파일을 받았습니다.<br />
+고칠 곳을 자리와 모양으로 적어 고치게 한 뒤, 고치기 전 파일과 고친 파일을 나란히 열어 비교했습니다.<br />
+그때 고친 파일은 고치기 전 파일과 따로 다시 왔습니다.</p>
+
+<p>대화의 답도 마찬가지입니다.<br />
+대화에 다시 요청하면 Claude는 앞의 답을 고치지 않고 새 답을 씁니다.<br />
+고친 문단만 보내기도 하고 안내문 전체를 처음부터 다시 쓰기도 하지만, 어느 쪽이든 고친 결과는 앞의 답 아래에 따로 놓인 새 답입니다.<br />
+앞의 답은 그대로 남습니다.</p>
+
+<p>그래서 고쳐 달라고 하지 않은 문단이 그대로인지는 새 답과 앞의 답을 나란히 놓고 맞춰 보아야만 알 수 있습니다.<br />
+<strong>대화의 답은 주고받은 말이 차례로 쌓이는 기록이지, 한 장의 문서가 아닙니다.</strong></p>
+
+<blockquote>
+  <p><strong>↓ 이어서</strong> 여러 번 고칠 글이라면 처음부터 한 장의 문서로 받을 수는 없을까요?</p>
+</blockquote>
+
+<h2 id="여행-안내문을-docs로-만들기">여행 안내문을 Docs로 만들기</h2>
+
+<p>→ Output에서 Docs를 골라 여행 안내문을 만들고, 그 문서가 어디에 저장되는지 찾아봅니다.</p>
+
+<h3 id="output에서-docs-고르기">Output에서 Docs 고르기</h3>
+
+<p>여러 번 고칠 글은 처음부터 한 장의 문서로 받는 편이 낫습니다.<br />
+오늘은 Claude에게 그런 문서를 만들게 하는 Docs를 씁니다.<br />
+Docs는 Claude가 만든 문서를 내 Claude 계정에 저장해 두고, 나와 Claude가 같은 문서를 그 자리에서 고치는 기능입니다.</p>
+
+<p>연습으로 가족 여행 안내문을 Docs로 만든 뒤, 키오스크 조사 요약을 Docs로 만들어 팀원과 함께 고쳐 봅니다.</p>
+
+<p>[화면 캡처: A-6-01 — 데스크톱 앱 새 대화의 입력창에서 <code>Output</code>을 연 화면. ① 입력창의 <code>Output</code>, ② <code>Docs</code>, ③ <code>Slides</code>, <code>Design</code>, <code>Dashboards</code>]<br />
+▲ 입력창의 <code>Output</code> 메뉴에 만들 결과의 모양이 나열된 모습</p>
+
+<p>① 데스크톱 앱에서 사이드바의 새 대화 버튼을 클릭해 새 대화를 엽니다.</p>
+
+<p>② 입력창의 <code>Output</code>을 클릭합니다.</p>
+
+<p>③ 메뉴에서 <code>Docs</code>를 클릭합니다.</p>
+
+<p>메뉴에 <code>Docs</code>, <code>Slides</code>, <code>Design</code>, <code>Dashboards</code>가 보이면 됩니다.<br />
+메뉴를 쓰지 않고 입력창 맨 앞에 <code>/docs</code>를 적은 뒤 요청을 이어 써도 같습니다.</p>
+
+<blockquote>
+  <p><strong>⚠ 확인 필요</strong> 데스크톱 앱 입력창에서 Output의 자리와 메뉴에 보이는 템플릿 이름</p>
+</blockquote>
+
+<h3 id="여행-안내문-요청">여행 안내문 요청</h3>
+
+<p>아래 요청문을 입력하고 보냅니다.<br />
+요청문에는 문서의 차례와, 비워 둘 칸과, 지어내지 말 사실을 적었습니다.<br />
+5강에서 파일을 받을 때 조건을 먼저 적어야 받은 결과를 조건과 맞춰 볼 수 있었던 것과 같습니다.</p>
+
+<pre><code class="language-claude">가족 넷이 가는 부산 1박 2일 여행 안내문을 만들어 줘.
+
+- 때: 2026년 11월 14일 토요일 아침 8시 서울역 출발, 15일 일요일 저녁 7시 서울역 도착
+- 가는 길: KTX 왕복
+- 첫날: 해운대 해변 산책, 점심은 해운대 근처 식당, 오후에 동백섬, 저녁에 광안리에서 광안대교 야경 보기
+- 둘째 날: 감천문화마을, 점심은 남포동, 오후 4시 부산역 출발
+- 준비물: 신분증, 편한 신발, 얇은 겉옷, 휴대전화 충전기
+
+맨 위에 제목, 그다음 한눈에 보는 일정 표(날짜, 시간, 할 일, 장소), 날마다 자세한 일정, 준비물 목록, 연락처 칸의 차례로 써 줘. 연락처 칸은 비워 두고 "(직접 적기)"라고만 써 줘. 식당 이름, 기차 시간표, 입장료처럼 위에 적지 않은 사실은 지어내지 마.
+</code></pre>
+
+<p>Docs를 만들 때 Claude는 초안을 쓰기 전에 몇 가지를 먼저 물을 수 있습니다.<br />
+물으면 요청문에 적은 것 안에서 답합니다.<br />
+요청문에 없는 것(숙소, 식당 이름)을 물으면 "정하지 않았으니 비워 둬"라고 답합니다.</p>
+
+<blockquote>
+  <p><strong>⚠ 확인 필요</strong> 이 요청문을 보냈을 때 Claude가 먼저 묻는지와 묻는 내용</p>
+</blockquote>
+
+<h3 id="claude의-답과-만들어진-문서">Claude의 답과 만들어진 문서</h3>
+
+<p>문서가 다 만들어지면 대화에는 짧은 답이 오고, 문서는 대화 옆의 창에 열립니다.</p>
+
+<blockquote>
+  <p><strong>⚠ 확인 필요</strong> 데스크톱 앱에서 Docs가 대화 옆 창으로 열리는지와 창의 모양</p>
+</blockquote>
+
+<p>Claude가 실제로 낸 답은 아래와 같고, 그 아래의 표와 목록이 Docs에 만들어진 문서의 내용입니다.<br />
+문서 안에서는 표가 표로, 제목이 굵은 큰 글씨로 보입니다.</p>
+
+<pre><code class="language-text">부산 여행 안내문을 Docs로 만들었습니다. 문서에 들어간 내용은 아래와 같습니다. 주신 정보에 없는 식당 이름, 기차 편명과 도착 시각, 입장료, 숙소는 적지 않았습니다.
+
+#### 가족 넷이 함께하는 부산 1박 2일 여행 안내
+
+**한눈에 보는 일정**
+
+| 날짜 | 시간 | 할 일 | 장소 |
+|---|---|---|---|
+| 11월 14일(토) | 아침 8시 | KTX로 부산 출발 | 서울역 |
+| 11월 14일(토) | 도착 후 | 해변 산책 | 해운대 해변 |
+| 11월 14일(토) | 점심 | 점심 식사 | 해운대 근처 식당 |
+| 11월 14일(토) | 오후 | 섬 둘러보기 | 동백섬 |
+| 11월 14일(토) | 저녁 | 광안대교 야경 보기 | 광안리 |
+| 11월 15일(일) | 점심 전 | 마을 둘러보기 | 감천문화마을 |
+| 11월 15일(일) | 점심 | 점심 식사 | 남포동 |
+| 11월 15일(일) | 오후 4시 | KTX로 서울 출발 | 부산역 |
+| 11월 15일(일) | 저녁 7시 | 서울 도착 | 서울역 |
+
+**첫째 날: 11월 14일 토요일**
+
+11월 14일 토요일 아침 8시에 서울역에서 KTX를 타고 부산으로 출발합니다. 부산에 도착하면 해운대로 가서 해운대 해변을 따라 산책합니다. 점심은 해운대 근처 식당에서 먹습니다. 오후에는 동백섬으로 가서 섬을 둘러봅니다. 저녁에는 광안리로 옮겨 광안대교 야경을 봅니다.
+
+**둘째 날: 11월 15일 일요일**
+
+11월 15일 일요일에는 먼저 감천문화마을을 둘러봅니다. 점심은 남포동에서 먹습니다. 오후 4시에 부산역에서 KTX를 타고 서울로 출발합니다. 저녁 7시에 서울역에 도착하면 여행이 끝납니다.
+
+**준비물**
+
+- 신분증
+- 편한 신발
+- 얇은 겉옷
+- 휴대전화 충전기
+
+**연락처**
+
+(직접 적기)
+
+---
+
+문서에서 비워 둔 곳이 있습니다. 첫날 부산에 도착하는 시각과 역, 첫날 밤 묵을 곳은 주신 정보에 없어서 적지 않았습니다. 표의 "도착 후"와 "점심 전"은 주신 순서대로 놓으려고 시각 대신 쓴 말이니, 정확한 시각을 정하시면 그 칸을 고쳐 주세요.
+</code></pre>
+
+<p>여러분이 받은 문서는 이 결과와 다를 수 있습니다.<br />
+Claude는 같은 요청에도 보낼 때마다 조금씩 다르게 쓰기 때문입니다.<br />
+받은 결과가 달라도 이 강의는 위의 결과로 이어 갑니다.</p>
+
+<p>답의 마지막 문단을 눈여겨봅니다.<br />
+Claude가 요청문에 없던 도착 시각과 숙소를 지어내지 않고 비워 두었다고 스스로 밝혔고, 표의 "도착 후"와 "점심 전"이 시각이 아니라는 것도 알려 줍니다.<br />
+요청문에 "지어내지 마"를 적었기 때문에 나온 문단입니다.</p>
+
+<p>[화면 캡처: A-6-02 — 여행 안내문 Docs가 만들어진 데스크톱 앱 화면. ① 대화의 짧은 답, ② 대화 옆에 열린 Docs 문서, ③ 문서 안의 일정 표]<br />
+▲ 대화의 짧은 답 옆에 여행 안내문 Docs가 열린 모습</p>
+
+<h3 id="문서가-저장된-artifacts-탭">문서가 저장된 Artifacts 탭</h3>
+
+<p>이제 이 문서가 어디에 저장되었는지 봅니다.</p>
+
+<p>[화면 캡처: A-6-03 — 사이드바의 <code>Artifacts</code> 탭을 연 화면. ① 사이드바의 <code>Artifacts</code>, ② 템플릿 갤러리, ③ 목록의 "부산 여행 안내문"]<br />
+▲ <code>Artifacts</code> 탭의 목록에 방금 만든 "부산 여행 안내문"이 보이는 모습</p>
+
+<p>① 사이드바에서 <code>Artifacts</code>를 클릭합니다.</p>
+
+<p>② 목록에서 "부산 여행 안내문" 문서를 찾습니다.</p>
+
+<p>지금 만든 "부산 여행 안내문" 문서가 목록에 보이면 됩니다.</p>
+
+<blockquote>
+  <p><strong>⚠ 확인 필요</strong> 사이드바에서 Artifacts 탭의 자리와 목록에 보이는 문서 이름</p>
+</blockquote>
+
+<p>Claude로 만든 문서, 발표 자료, 화면 디자인은 모두 이 <code>Artifacts</code> 탭에 저장됩니다.<br />
+웹에서는 claude.ai/artifacts 주소로 같은 목록이 열립니다.<br />
+이 대화를 닫거나 다른 대화로 옮겨 가도 문서는 이 탭에서 다시 찾을 수 있습니다.</p>
+
+<p><code>Artifacts</code> 탭 위쪽에는 템플릿 갤러리가 있습니다.<br />
+대화를 거치지 않고 여기서 Docs 템플릿을 골라 무엇을 만들지 설명해도 문서가 시작됩니다.</p>
+
+<blockquote>
+  <p><strong>⚠ 확인 필요</strong> Artifacts 탭에서 템플릿 갤러리의 자리와 Docs 템플릿의 모양</p>
+</blockquote>
+
+<blockquote>
+  <p><strong>↓ 이어서</strong> 지금까지 Claude가 만든 결과를 세 가지 모양으로 보았습니다.<br />
+이 셋은 저장되는 곳과 고치는 법이 어떻게 다를까요?</p>
+</blockquote>
+
+<h2 id="답-아티팩트-docs는-무엇이-다른가">답, 아티팩트, Docs는 무엇이 다른가</h2>
+
+<p>→ 대화의 답, 아티팩트, Docs를 저장되는 곳, 함께 고치는지, 내보내는 형식으로 나누어 봅니다.</p>
+
+<h3 id="세-가지를-나누는-세-가지-기준">세 가지를 나누는 세 가지 기준</h3>
+
+<p>[이미지: A-6-04 — 기술 그림.]<br />
+▲ 답, 아티팩트, Docs가 저장되는 곳과 함께 고치는지와 내보내는 형식을 비교한 표</p>
+
+<p>지금까지 Claude가 만든 결과를 세 가지 모양으로 보았습니다.<br />
+2강부터 5강까지 받아 온 대화의 답, 오늘 <code>Artifacts</code> 탭에서 본 아티팩트, 그 아티팩트 가운데 하나인 Docs 문서입니다.<br />
+셋은 모두 Claude가 쓴 글이지만 다루는 법이 같지는 않습니다.</p>
+
+<p>셋을 "어디에 저장되나", "다른 사람과 함께 고칠 수 있나", "무엇으로 내보내나"의 세 가지로 나누어 봅니다.</p>
+
+<h3 id="어디에-저장되나">어디에 저장되나</h3>
+
+<p>답은 그 대화 안에 남습니다.<br />
+답을 다시 보려면 그 대화를 찾아 열어야 하고, 고치려면 새 답을 받아야 합니다.</p>
+
+<p>아티팩트와 Docs는 모두 사이드바의 <code>Artifacts</code> 탭에 저장됩니다.<br />
+아티팩트는 Claude가 만든 결과물을 대화의 답과 따로 떼어 내 계정에 두고, 보면서 고치는 자리를 부르는 이름입니다.<br />
+Docs는 아티팩트의 한 종류이고, 같은 탭에 Slides로 만든 발표 자료와 Design으로 만든 화면이 함께 모입니다.</p>
+
+<p>대화 옆에 열려 있던 모습 때문에 Docs가 대화 안에 있는 것처럼 보이지만, <strong>문서는 대화와 따로 저장되어 있습니다.</strong></p>
+
+<h3 id="다른-사람과-함께-고칠-수-있나">다른 사람과 함께 고칠 수 있나</h3>
+
+<p>답은 나와 Claude가 주고받은 기록이라 다른 사람이 들어와 고칠 수 없습니다.</p>
+
+<p>아티팩트는 <code>Share</code>로 다른 사람과 나누며, 종류에 따라 <code>Can view</code>, <code>Commenter</code>, <code>Can edit</code> 가운데 권한을 고릅니다.<br />
+Docs는 메일로 초대하지 못하고 링크로만 나눕니다.<br />
+링크를 받은 사람에게 <code>Editor</code> 권한을 주면 그 사람도 같은 문서를 고칩니다.</p>
+
+<p>내가 고친 것은 저절로 저장되고, 문서를 열어 둔 사람 모두에게 바로 보입니다.<br />
+누가 링크를 열 수 있는지는 키오스크 조사 요약을 팀원과 나눌 때 직접 확인합니다.</p>
+
+<h3 id="무엇으로-내보내나">무엇으로 내보내나</h3>
+
+<p>답은 복사해 다른 프로그램에 붙여 넣습니다.</p>
+
+<blockquote>
+  <p><strong>⚠ 확인 필요</strong> 데스크톱 앱에서 답 아래 복사 버튼의 자리와 이름</p>
+</blockquote>
+
+<p>아티팩트는 종류에 따라 내보내는 형식이 다릅니다.<br />
+Docs는 <code>Export</code>에서 Word(.docx), PDF(.pdf), Markdown(.md), Google Docs 가운데 하나를 고릅니다.</p>
+
+<p>5강에서 받은 Word 파일은 처음부터 내 PC에 다운로드하는 파일이었습니다.<br />
+Docs는 Claude 계정에 있는 문서를 필요할 때 파일로 꺼낸다는 점이 다릅니다.</p>
+
+<h3 id="output-메뉴의-나머지-템플릿">Output 메뉴의 나머지 템플릿</h3>
+
+<p>[이미지: A-6-05 — 기술 그림.]<br />
+▲ <code>Output</code> 메뉴의 템플릿과 그 템플릿을 다루는 강의를 이은 모습</p>
+
+<p><code>Output</code> 메뉴에 있던 나머지 템플릿도 이 강의 뒤에 다시 만납니다.<br />
+Design은 대주제 3의 1강에서 키오스크 주문 화면을 만들 때, Slides는 대주제 3의 8강에서 포트폴리오 발표 자료를 만들 때 씁니다.<br />
+Docs 문서를 Slides 발표 자료로 바꿔 달라고 할 수도 있습니다.</p>
+
+<p>Dashboards는 연결한 데이터로 차트가 든 화면을 만드는 beta 기능이고 이 대주제에서는 다루지 않습니다.</p>
+
+<p>하나만 더 알아 둡니다.<br />
+아티팩트는 Google Calendar처럼 Claude에 연결한 앱을 읽고 쓸 수도 있어, 팀이 함께 쓰는 신청표 같은 작은 도구를 프로그래밍 없이 만들 수 있습니다.</p>
+
+<blockquote>
+  <p><strong>↓ 이어서</strong> 문서가 한 장으로 남는다면, 고칠 문단만 골라 Claude에게 맡길 수도 있지 않을까요?<br />
+그때 다른 문단은 정말 그대로 있을까요?</p>
+</blockquote>
+
+<h2 id="고를-곳만-docs에서-고치게-하기">고를 곳만 Docs에서 고치게 하기</h2>
+
+<p>→ 문단과 줄을 골라 그 자리만 고치게 하고, 고치라고 하지 않은 곳이 그대로인지 직접 맞춰 봅니다.</p>
+
+<h3 id="고칠-문단-고르기">고칠 문단 고르기</h3>
+
+<p>이번에는 받은 요청문 없이 직접 Docs를 고쳐 봅니다.<br />
+여행 안내문 Docs를 열어 둡니다.<br />
+<code>Artifacts</code> 탭에서 "부산 여행 안내문"을 클릭해도 되고, 대화 옆 창에 열려 있으면 그대로 씁니다.</p>
+
+<p>고칠 곳은 "첫째 날: 11월 14일 토요일" 아래의 문단입니다.<br />
+다섯 문장이 넘어 길어 보이니 세 문장 안으로 줄이게 합니다.<br />
+줄이더라도 아침 8시, 서울역, 해운대 해변, 해운대 근처 식당, 동백섬, 광안리, 광안대교는 그대로 남아야 하고, 둘째 날 문단과 준비물은 바뀌면 안 됩니다.</p>
+
+<p>Docs에서는 고칠 글을 마우스로 골라 그 자리만 Claude에게 맡길 수 있습니다.</p>
+
+<p>[화면 캡처: A-6-06 — 여행 안내문 Docs에서 첫날 문단을 고른 화면. ① 고른 첫날 문단, ② <code>Edit with Claude</code>]<br />
+▲ 첫날 문단을 고르자 고른 글 가까이에 <code>Edit with Claude</code>가 나타난 모습</p>
+
+<p>① 첫날 문단을 처음부터 끝까지 끌어 고릅니다.</p>
+
+<p>② 고른 글 가까이에 나타난 <code>Edit with Claude</code>를 확인합니다.</p>
+
+<p>아직 클릭하지 않습니다.</p>
+
+<blockquote>
+  <p><strong>⚠ 확인 필요</strong> Docs에서 글을 골랐을 때 Edit with Claude가 같은 이름으로 보이는지와 그 자리</p>
+</blockquote>
+
+<h3 id="edit-with-claude로-문단-줄이기">Edit with Claude로 문단 줄이기</h3>
+
+<p>요청을 보내기 전에 지금의 첫날 문단과 둘째 날 문단을 메모장에 복사해 둡니다.<br />
+고친 뒤 맞춰 보기 쉽습니다.</p>
+
+<p><code>Edit with Claude</code>를 클릭하고, 위의 조건을 담아 요청을 직접 씁니다.<br />
+고른 문단에만 할 일, 남길 낱말, 건드리지 말 곳이 모두 들어가게 씁니다.<br />
+이 강의에서는 이렇게 썼습니다.</p>
+
+<pre><code class="language-claude">이 문단만 세 문장 안으로 줄여 줘. 시간과 장소 이름은 그대로 두고, 다른 문단은 바꾸지 마.
+</code></pre>
+
+<p>Claude가 실제로 낸 답은 이렇습니다.</p>
+
+<pre><code class="language-text">고르신 첫째 날 문단을 세 문장으로 줄였습니다. 아침 8시, 서울역, 해운대 해변, 해운대 근처 식당, 동백섬, 광안리, 광안대교는 그대로 두었고, 다른 문단은 바꾸지 않았습니다.
+
+&gt; 11월 14일 토요일 아침 8시에 서울역에서 KTX로 출발해, 부산에 도착하면 해운대 해변을 따라 산책합니다. 점심은 해운대 근처 식당에서 먹고, 오후에는 동백섬을 둘러봅니다. 저녁에는 광안리에서 광안대교 야경을 봅니다.
+</code></pre>
+
+<p>답을 믿고 넘어가지 말고 문서에서 직접 맞춰 봅니다.<br />
+먼저 첫날 문단이 문서 안에서 이 세 문장으로 바뀌었는지 봅니다.<br />
+다음으로 메모장에 복사해 둔 둘째 날 문단을 문서의 둘째 날 문단과 한 문장씩 맞춰 보고, 일정 표의 아홉 줄과 준비물 네 줄도 그대로인지 봅니다.<br />
+남기라고 한 낱말 일곱 개를 고친 문단에서 하나씩 찾아 표시합니다.</p>
+
+<blockquote>
+  <p><strong>⚠ 확인 필요</strong> Edit with Claude로 고친 뒤 문서에서 첫날 문단만 바뀌고 둘째 날 문단, 일정 표, 준비물이 그대로인지</p>
+</blockquote>
+
+<p><code>Edit with Claude</code>는 표시한 글을 고칩니다.<br />
+대화에 요청할 때처럼 어느 문단인지 말로 설명하지 않아도 되고, Claude가 고치는 대상은 고른 자리입니다.<br />
+문서가 한 장으로 남아 있고 고친 것이 그 자리에 들어가므로, 앞에서 직원 A가 겪은 "어느 답이 마지막 판인가"라는 물음도 생기지 않습니다.</p>
+
+<p>그래도 고른 자리 밖이 바뀌지 않았는지는 오늘처럼 직접 맞춰 봅니다.<br />
+Claude가 "다른 문단은 바꾸지 않았습니다"라고 답한 것은 Claude의 말이고, ==실제로 그랬는지는 문서를 본 사람만 압니다.==</p>
+
+<h3 id="판-기록으로-고치기-전-모습-보기">판 기록으로 고치기 전 모습 보기</h3>
+
+<p>Docs에는 판 기록(version history)이 있어 고치기 전의 모습을 다시 볼 수 있습니다.</p>
+
+<blockquote>
+  <p><strong>⚠ 확인 필요</strong> Docs에서 판 기록을 여는 버튼의 자리와 이름, 앞 판으로 되돌리는 방법</p>
+</blockquote>
+
+<p>판 기록은 창이 좁으면 글 위에 열립니다.</p>
+
+<blockquote>
+  <p><strong>⚠ 확인 필요</strong> 창이 넓을 때 판 기록이 열리는 자리</p>
+</blockquote>
+
+<h3 id="댓글로-준비물-줄-더하기">댓글로 준비물 줄 더하기</h3>
+
+<p>이번에는 댓글로 고치게 합니다.<br />
+준비물 목록 맨 끝에 우산 한 줄을 더하려고 합니다.<br />
+11월 중순 부산 날씨는 미리 알 수 없으니, 날씨를 전날 확인하라는 말도 함께 넣습니다.</p>
+
+<p>[화면 캡처: A-6-07 — 준비물 목록에 @Claude 댓글을 달고 Claude가 답한 화면. ① 고른 준비물 목록, ② @Claude로 시작하는 댓글, ③ Claude의 답, ④ 더해진 우산 줄]<br />
+▲ 준비물 목록에 단 댓글에 Claude가 답하고 우산 줄이 더해진 모습</p>
+
+<p>① 준비물 네 줄을 끌어 고릅니다.</p>
+
+<p>② 고른 글에 댓글을 답니다.</p>
+
+<p>③ 댓글을 보냅니다.</p>
+
+<blockquote>
+  <p><strong>⚠ 확인 필요</strong> Docs에서 댓글을 다는 버튼의 이름과 자리</p>
+</blockquote>
+
+<p>댓글에 <code>@Claude</code>를 넣어야 Claude가 그 댓글을 자기에게 온 요청으로 읽습니다.<br />
+더할 줄의 글자와 자리, 건드리지 말 줄을 넣어 댓글을 직접 씁니다.<br />
+이 강의에서는 이렇게 썼습니다.</p>
+
+<pre><code class="language-claude">@Claude 준비물 목록 맨 끝에 "우산(11월 14일 부산 날씨를 전날 확인)"을 한 줄 더해 줘. 다른 줄은 바꾸지 마.
+</code></pre>
+
+<p>Claude는 그 댓글 흐름에 답을 달고 무엇을 바꿨는지 설명합니다.</p>
+
+<blockquote>
+  <p><strong>⚠ 확인 필요</strong> Claude의 설명이 댓글 답으로 보이는 모양</p>
+</blockquote>
+
+<p>Claude가 실제로 낸 답은 이렇습니다.</p>
+
+<pre><code class="language-text">준비물 목록 맨 끝에 한 줄을 더했습니다. 위의 네 줄은 바꾸지 않았습니다.
+
+- 신분증
+- 편한 신발
+- 얇은 겉옷
+- 휴대전화 충전기
+- 우산(11월 14일 부산 날씨를 전날 확인)
+</code></pre>
+
+<p>이것도 문서에서 맞춰 봅니다.<br />
+우산 줄이 맨 끝에 있는지, 괄호 안의 글자가 댓글에 적은 것과 같은지, 위의 네 줄이 그대로인지 봅니다.</p>
+
+<p><code>Edit with Claude</code>와 댓글은 둘 다 고른 자리만 고치게 합니다.<br />
+다른 점은 댓글이 문서에 흔적으로 남는다는 것입니다.<br />
+나중에 함께 고치는 팀원이 댓글을 보고 무엇을 왜 고쳤는지 알 수 있습니다.</p>
+
+<h3 id="word-파일로-내보내-확인하기">Word 파일로 내보내 확인하기</h3>
+
+<p>다 고친 문서를 Word 파일로 꺼냅니다.</p>
+
+<p>[화면 캡처: A-6-08 — 여행 안내문 Docs에서 <code>Export</code>를 연 화면. ① <code>Export</code>, ② <code>Word</code>, ③ <code>PDF</code>, ④ <code>Markdown</code>, ⑤ <code>Google Docs</code>]<br />
+▲ <code>Export</code> 메뉴에 내보낼 형식이 나열된 모습</p>
+
+<p>① 문서 화면의 <code>Export</code>를 클릭합니다.</p>
+
+<p>② <code>Word</code>를 클릭합니다.</p>
+
+<p>파일은 <code>Downloads</code> 폴더에 다운로드됩니다.<br />
+이 연습 파일은 키오스크 폴더로 옮기지 않고 그대로 둡니다.</p>
+
+<blockquote>
+  <p><strong>⚠ 확인 필요</strong> Docs에서 Export의 자리와 메뉴에 보이는 형식 이름, 다운로드한 Word 파일의 이름</p>
+</blockquote>
+
+<p>File Explorer에서 <code>Downloads</code> 폴더를 열고 다운로드한 파일을 두 번 클릭해 Word로 엽니다.<br />
+5강에서 받은 파일을 열 때 쓴 점검표처럼 내용과 모양을 한 줄씩 봅니다.</p>
+
+<ul>
+  <li>맨 위에 제목이 있는지 봅니다.</li>
+  <li>일정 표가 Word에서도 표로 열리고 칸이 날짜, 시간, 할 일, 장소 넷인지 봅니다.</li>
+  <li>첫날 문단이 고친 세 문장인지 봅니다.</li>
+  <li>준비물 맨 끝에 우산 줄이 있는지 봅니다.</li>
+  <li>연락처 칸이 "(직접 적기)"로 비어 있는지 봅니다.</li>
+  <li>요청에 없던 식당 이름, 기차 시간, 입장료가 들어가지 않았는지 봅니다.</li>
+</ul>
+
+<blockquote>
+  <p><strong>⚠ 확인 필요</strong> 내보낸 Word 파일에서 일정 표가 표로 열리는지와 제목이 Word의 제목 스타일인지</p>
+</blockquote>
+
+<p>하나라도 다르면 Word를 고치지 말고 Docs로 돌아가 그곳에서 고친 뒤 다시 내보냅니다.<br />
+<strong>원본은 Docs에 있으니, Word만 고치면 다음에 내보낼 때 고친 것이 사라집니다.</strong></p>
+
+<blockquote>
+  <p><strong>↓ 이어서</strong> 여행 안내문으로 익힌 방법을 키오스크 프로젝트에도 쓸 수 있을까요?<br />
+이번에는 혼자가 아니라 팀원과 함께 고쳐야 합니다.</p>
+</blockquote>
+
+<h2 id="키오스크-조사-요약을-팀원과-고치기">키오스크 조사 요약을 팀원과 고치기</h2>
+
+<p>→ 조사 보고서로 요약 Docs를 만들어 보고서와 대조하고, 팀원과 함께 고친 뒤 Markdown 파일로 꺼냅니다.</p>
+
+<h3 id="보고서를-올리고-요약-만들기">보고서를 올리고 요약 만들기</h3>
+
+<p>5강에서 3강의 Research 보고서를 Word로 받아 <code>C:\kiosk-project\kiosk-research-report.docx</code>로 저장했습니다.<br />
+이 보고서는 길어서 팀원이 한눈에 보기 어렵습니다.<br />
+그래서 보고서를 줄인 조사 요약을 Docs로 만들고, 조사를 맡은 팀원 이서연과 함께 고친 뒤, 마지막에 Markdown 파일로 키오스크 폴더에 남깁니다.</p>
+
+<p>팀원 역할은 함께 강의를 듣는 사람이나 여러분의 다른 Claude 계정이 맡습니다.</p>
+
+<p>[화면 캡처: A-6-09 — 보고서 Word 파일을 올리고 <code>Output</code>에서 <code>Docs</code>를 고른 입력창. ① 입력창 위에 붙은 <code>kiosk-research-report.docx</code>, ② <code>Output</code>의 <code>Docs</code>]<br />
+▲ 보고서 파일 이름이 입력창 위에 붙고 <code>Output</code>에서 <code>Docs</code>가 골라진 모습</p>
+
+<p>① 사이드바에서 새 대화를 엽니다.</p>
+
+<p>② 입력창의 + 버튼을 클릭합니다.</p>
+
+<p>③ <code>Add files or photos</code>를 클릭합니다.</p>
+
+<p>④ 파일을 고르는 창에서 <code>C:\kiosk-project</code>의 <code>kiosk-research-report.docx</code>를 골라 엽니다.</p>
+
+<p>⑤ 입력창 위에 파일 이름이 붙었는지 확인합니다.</p>
+
+<p>보내기 전에 파일 이름이 붙었는지 꼭 봅니다.<br />
+파일이 붙지 않은 채 보내면 Claude는 보고서를 읽지 못하고, 내용 없는 빈 차례만 돌려줄 수 있습니다.</p>
+
+<p>파일 이름이 붙었으면 <code>Output</code>에서 <code>Docs</code>를 고르고 아래 요청문을 보냅니다.</p>
+
+<pre><code class="language-claude">올린 `kiosk-research-report.docx`는 카페 키오스크 개선 사례와 접근성 조사 보고서야. 이 보고서로 팀원과 함께 고칠 조사 요약 문서를 만들어 줘.
+
+- 제목은 "키오스크 개선 사례와 접근성 조사 요약"으로 해 줘.
+- 핵심 요약 세 줄, 국내 사례 세 가지까지의 표(어디서, 무엇을 바꿨나, 결과, 출처 링크), 접근성 기준 정리, 확인이 필요한 부분의 차례로 써 줘.
+- 보고서에 있는 내용만 쓰고, 보고서에서 결과를 찾지 못했다고 한 사례는 결과 칸에 "결과 찾지 못함"이라고 그대로 적어 줘.
+- 수치와 제도에는 보고서에 적힌 기준일을 함께 적어 줘.
+- 맨 끝에 "팀원이 고칠 곳" 장을 두고, 팀원이 확인할 줄을 보고서의 확인이 필요한 부분에서 골라 목록으로 적어 줘.
+</code></pre>
+
+<p>Claude가 실제로 만든 조사 요약 문서는 아래와 같습니다.</p>
+
+<blockquote>
+  <p><strong>⚠ 확인 필요</strong> 사용자가 <code>kiosk-research-report.docx</code>를 올린 대화에서 이 요청을 보내 받은 결과로 채운다 — 대화의 짧은 답과, Docs "키오스크 개선 사례와 접근성 조사 요약"의 전체 내용(핵심 요약 세 줄, 국내 사례 표, 접근성 기준 정리, 확인이 필요한 부분, 팀원이 고칠 곳의 다섯 부분이 보여야 한다)과, 파일을 올린 대화에서 Output의 Docs가 그 파일을 근거로 문서를 만드는지</p>
+</blockquote>
+
+<p>[화면 캡처: A-6-10 — 조사 요약 Docs가 만들어진 화면. ① 대화의 짧은 답, ② Docs 제목, ③ 국내 사례 표, ④ "팀원이 고칠 곳" 장]<br />
+▲ 조사 요약 Docs에 국내 사례 표와 "팀원이 고칠 곳" 장이 보이는 모습</p>
+
+<h3 id="요약을-보고서와-대조하기">요약을 보고서와 대조하기</h3>
+
+<p>팀원에게 보내기 전에 요약을 보고서와 대조합니다.<br />
+요약은 짧고 그럴듯해 보여서, 보고서에 없던 말이 섞여도 눈에 잘 띄지 않습니다.<br />
+보고서를 Word로 열어 요약 옆에 나란히 둡니다.</p>
+
+<p>2강에서 출처를 열어 줄마다 표시했듯이, 요약의 줄마다 셋 가운데 하나를 표시합니다.</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>표시</th>
+      <th>고르는 때</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>확인함</td>
+      <td>보고서에서 같은 내용을 찾았습니다</td>
+    </tr>
+    <tr>
+      <td>보고서에 없음</td>
+      <td>보고서에서 찾지 못했습니다</td>
+    </tr>
+    <tr>
+      <td>보고서와 다름</td>
+      <td>보고서와 값이나 뜻이 다릅니다</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>볼 곳은 다섯입니다.</p>
+
+<ul>
+  <li><strong>핵심 요약 세 줄:</strong> 보고서의 문장에서 나왔는지 봅니다.</li>
+  <li><strong>사례 표:</strong> 줄이 셋 이하이고, 어디서, 무엇을 바꿨나, 결과의 칸이 보고서와 같은지 봅니다.</li>
+  <li><strong>결과를 찾지 못한 사례:</strong> 보고서가 결과를 찾지 못했다고 한 사례의 결과 칸이 "결과 찾지 못함"인지 봅니다.</li>
+  <li><strong>수치와 제도:</strong> 기준일이 붙어 있고, 그 날짜가 보고서에 적힌 날짜와 같은지 봅니다.</li>
+  <li><strong>출처 링크:</strong> 하나씩 클릭해 열리는지, 보고서의 링크와 같은 주소인지 봅니다.</li>
+</ul>
+
+<p>"보고서에 없음"이나 "보고서와 다름"을 표시한 줄이 있으면 그 줄을 골라 <code>Edit with Claude</code>로 보고서의 값으로 고치게 하고, 고친 뒤 다시 표시합니다.</p>
+
+<blockquote>
+  <p><strong>⚠ 확인 필요</strong> 대조에서 나온 "보고서에 없음"이나 "보고서와 다름" 줄과 그 고친 결과</p>
+</blockquote>
+
+<h3 id="share로-팀원에게-보내기">Share로 팀원에게 보내기</h3>
+
+<p>대조를 마쳤으면 팀원 이서연에게 이 문서를 보냅니다.<br />
+Docs는 처음 만들었을 때 나만 볼 수 있습니다.<br />
+이서연은 "팀원이 고칠 곳"을 고쳐야 하므로 <code>Editor</code>를 고릅니다.</p>
+
+<p>[화면 캡처: A-6-11 — 조사 요약 Docs의 <code>Share</code> 화면. ① <code>Share</code>, ② 누가 열 수 있는지 고르는 곳, ③ <code>Viewer</code>와 <code>Editor</code>, ④ 링크 복사]<br />
+▲ <code>Share</code> 화면에서 링크를 가진 사람과 권한을 고르는 모습</p>
+
+<p>① 문서 화면의 <code>Share</code>를 클릭합니다.</p>
+
+<p>② 누가 열 수 있는지를 링크를 가진 사람으로 바꿉니다.</p>
+
+<p>③ 권한을 <code>Editor</code>로 고릅니다.</p>
+
+<p>④ 링크를 복사합니다.</p>
+
+<p>복사한 링크는 메신저나 메일로 이서연에게 보냅니다.</p>
+
+<blockquote>
+  <p><strong>⚠ 확인 필요</strong> Docs의 Share 화면에 보이는 글자(Who has access, Only you, Anyone with the link, Viewer와 Editor인지 Can view와 Can edit인지)</p>
+</blockquote>
+
+<p>Pro 요금제에서 Docs는 링크를 가진 사람과 나눕니다.<br />
+메일 주소로 한 사람씩 초대하는 방법은 Docs에 없습니다.<br />
+그러니 이서연이 링크를 다른 사람에게 넘기면 그 사람도 링크를 가진 사람이 됩니다.</p>
+
+<p>다만 공유한 Docs를 열려면 누구든 Claude 계정이 있어야 합니다.<br />
+Claude 계정이 없는 사람은 링크를 받아도 열지 못합니다.</p>
+
+<p>권한은 둘입니다.</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>권한</th>
+      <th>할 수 있는 일</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>Viewer</code></td>
+      <td>문서를 읽기만 합니다</td>
+    </tr>
+    <tr>
+      <td><code>Editor</code></td>
+      <td>읽고, 고치고, 댓글을 달고, 내보내기까지 합니다</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>댓글만 달게 하는 권한은 없습니다.<br />
+그래서 <code>Editor</code> 링크가 다른 곳으로 퍼지면 모르는 사람이 문서를 고치거나 파일로 꺼내 갈 수 있습니다.<br />
+함께 고칠 사람에게만 <code>Editor</code> 링크를 보내고, 읽기만 할 사람에게는 <code>Viewer</code> 링크를 따로 보냅니다.</p>
+
+<blockquote>
+  <p><strong>⚠ 주의</strong><br />
+휴대전화의 Claude 앱에서는 공유 설정을 바꾸지 못하므로 데스크톱 앱이나 웹에서 바꿉니다.<br />
+문서의 이름을 바꾸거나 지우는 것은 만든 사람만 할 수 있습니다.<br />
+지운 문서는 휴지통 없이 바로 없어지고 링크를 받은 사람도 더는 열지 못하므로, 팀원과 나눈 문서는 지우기 전에 한 번 더 생각합니다.</p>
+</blockquote>
+
+<h3 id="팀원이-고친-줄-다시-확인하기">팀원이 고친 줄 다시 확인하기</h3>
+
+<p>이서연이 링크를 열어 "팀원이 고칠 곳"의 줄을 고칩니다.<br />
+함께 듣는 사람이 없으면 다른 Claude 계정으로 링크를 열어 이서연의 역할을 직접 합니다.<br />
+이서연이 고친 것은 저절로 저장되고, 문서를 열어 둔 내 화면에도 바로 나타납니다.</p>
+
+<blockquote>
+  <p><strong>⚠ 확인 필요</strong> 팀원이 고친 곳이 내 화면에 보이는 모양과, 누가 고쳤는지 표시되는지</p>
+</blockquote>
+
+<p>[화면 캡처: A-6-12 — 팀원이 "팀원이 고칠 곳"의 줄을 고친 뒤의 조사 요약 Docs. ① 팀원이 고친 줄, ② 고친 사람의 표시]<br />
+▲ 팀원이 고친 줄이 내 화면의 문서에 나타난 모습</p>
+
+<p>팀원이 고쳤다고 끝이 아닙니다.<br />
+이서연이 고친 줄마다 보고서를 다시 열어 같은 표시(확인함, 보고서에 없음, 보고서와 다름)를 합니다.<br />
+==함께 고친 문서라도 팀에 내놓는 것은 나이고, 고친 줄이 보고서와 맞는지 확인하는 일은 사람에게 남습니다.==</p>
+
+<h3 id="markdown-파일로-키오스크-폴더에-남기기">Markdown 파일로 키오스크 폴더에 남기기</h3>
+
+<p>마지막으로 다 고친 요약을 Markdown 파일로 꺼냅니다.<br />
+<code>Export</code>에서 <code>Markdown</code>을 고르면 파일이 <code>Downloads</code> 폴더에 다운로드됩니다.</p>
+
+<blockquote>
+  <p><strong>⚠ 확인 필요</strong> 다운로드한 Markdown 파일의 처음 이름과, 키오스크 폴더로 바로 저장할 수 있는지</p>
+</blockquote>
+
+<p>① 문서 화면의 <code>Export</code>를 클릭합니다.</p>
+
+<p>② <code>Markdown</code>을 클릭합니다.</p>
+
+<p>③ File Explorer에서 <code>Downloads</code> 폴더를 열고 다운로드한 파일을 <code>C:\kiosk-project</code>로 끌어 옮깁니다.</p>
+
+<p>④ 옮긴 파일을 오른쪽 클릭해 이름을 <code>kiosk-research-summary.md</code>로 바꿉니다.</p>
+
+<p>[화면 캡처: A-6-13 — 메모장으로 연 <code>kiosk-research-summary.md</code>. ① 제목 앞의 <code>#</code>, ② 표의 <code>|</code>, ③ 창 위의 파일 이름]<br />
+▲ 메모장에서 Markdown 파일의 제목 앞 <code>#</code>과 표의 <code>|</code>가 글자로 보이는 모습</p>
+
+<p>① 옮긴 파일을 오른쪽 클릭하고 <code>Open with</code>에서 메모장을 클릭합니다.</p>
+
+<p>② 제목 앞의 <code>#</code>을 봅니다.</p>
+
+<p>③ 표의 칸 사이에 있는 <code>|</code>를 봅니다.</p>
+
+<p>문서에서 큰 글씨였던 제목 앞에 <code>#</code>이, 표의 칸 사이에 <code>|</code>가 글자로 보이면 됩니다.<br />
+Docs 화면에서 보기 좋게 나오던 문서가 사실은 이런 기호가 섞인 글자로 꺼내진다는 것을 눈으로 보아 둡니다.</p>
+
+<blockquote>
+  <p><strong>⚠ 확인 필요</strong> 한국어 Windows에서 Open with와 메모장 메뉴의 글자</p>
+</blockquote>
+
+<blockquote>
+  <p><strong>⚠ 확인 필요</strong> 내보낸 Markdown 파일에서 제목이 <code>#</code>으로, 표가 <code>|</code>로 적혀 있는지</p>
+</blockquote>
+
+<p>이 파일은 10강에서 Word와 HWPX 파일과 나란히 메모장으로 다시 열고, 11강에서 이 기호들의 규칙을 배웁니다.</p>
+
+<h2 id="오늘-한-일-기록하기">오늘 한 일 기록하기</h2>
+
+<p>→ 쓰지 않은 기능은 이름만 적고, 오늘 확인한 것을 <code>ai-log.md</code>에 남깁니다.</p>
+
+<h3 id="쓰지-않은-기능은-이름만-적기">쓰지 않은 기능은 이름만 적기</h3>
+
+<p><code>Export</code> 메뉴에서 본 Google Docs처럼 이 강의에서 쓰지 않은 것은 <code>ai-log.md</code>에 이름과 한 줄 뜻만 적고 넘어갑니다.<br />
+Google Docs로 내보내기는 Google 계정의 문서로 꺼내는 것이고, Google 서비스와 Claude를 잇는 일은 21강에서 배웁니다.<br />
+Dashboards도 "연결한 데이터로 차트 화면을 만드는 beta 기능"이라고만 적어 둡니다.</p>
+
+<h3 id="ai-logmd에-오늘의-기록-더하기">ai-log.md에 오늘의 기록 더하기</h3>
+
+<p>① 메모장으로 <code>C:\kiosk-project\ai-log.md</code>를 엽니다.</p>
+
+<p>② 맨 끝에 오늘의 기록을 한 건 더합니다.</p>
+
+<p>③ Ctrl 키와 S 키를 함께 눌러 저장합니다.</p>
+
+<p>기록에는 아래를 적습니다.</p>
+
+<ul>
+  <li>답, 아티팩트, Docs의 차이</li>
+  <li>첫날 문단만 고치게 했을 때 실제로 바뀐 곳</li>
+  <li>링크를 누가 여는지와 <code>Share</code> 화면에서 확인한 것</li>
+  <li>조사 요약을 보고서와 대조해 "보고서에 없음"이나 "보고서와 다름"으로 표시한 줄과 고친 결과</li>
+  <li>내보낸 파일 <code>kiosk-research-summary.md</code></li>
+  <li>오늘 처음 본 낱말과 한 줄 뜻</li>
+</ul>
+
+<h3 id="오늘-정리">오늘 정리</h3>
+
+<p>오늘 여러분은 Claude가 쓴 글을 한 장의 문서로 받아, 고를 곳만 고치게 하고, 팀원과 함께 고쳤습니다.<br />
+이렇게 하면 고칠 때마다 새 답을 뒤져 마지막 판을 찾지 않아도 됩니다.</p>
+
+<p>그러나 문서가 보기 좋아졌다고 내용까지 맞는 것은 아닙니다.<br />
+고친 문단이 그 자리만 바뀌었는지, 요약의 줄이 보고서에 있는지, 팀원이 고친 줄이 보고서와 맞는지는 모두 여러분이 원본을 열어 확인했습니다.</p>
+
+<p>그렇게 확인한 요약은 이제 <code>kiosk-research-summary.md</code>라는 글자 파일로 키오스크 폴더에 있습니다.<br />
+Docs가 없어도, Claude 계정이 없는 사람도 메모장 하나로 열 수 있는 파일입니다.</p>
+
+<blockquote>
+  <p><strong>📌 정리</strong><br />
+대화의 답은 새 답이 쌓이는 기록이고, Docs는 <code>Artifacts</code> 탭에 저장되는 한 장의 문서입니다.<br />
+고칠 곳은 <code>Edit with Claude</code>나 <code>@Claude</code> 댓글로 골라 맡기고, 고른 자리 밖이 바뀌지 않았는지 직접 맞춰 봅니다.<br />
+링크로 나눌 때는 <code>Viewer</code>와 <code>Editor</code>를 가려 보내고, 함께 고친 문서도 원본과 맞는지 내가 확인합니다.</p>
+</blockquote>
+
+<blockquote>
+  <p><strong>❓ 질문</strong> 이 Markdown 파일은 Word나 한글 문서와 무엇이 다르기에, 프로젝트의 원본을 이런 글자 파일로 모을까요?</p>
+</blockquote>
+
+<h2 id="막혔을-때">막혔을 때</h2>
+
+<p>→ 이번 강에서 막힐 수 있는 두 경우의 해결을 봅니다.</p>
+
+<h3 id="자주-막히는-곳">자주 막히는 곳</h3>
+
+<table>
+  <thead>
+    <tr>
+      <th>증상</th>
+      <th>해결</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>보고서를 올렸는데 요약이 내용 없는 빈 차례뿐입니다</td>
+      <td>보내기 전에 입력창 위에 <code>kiosk-research-report.docx</code>가 붙었는지 확인합니다. 붙지 않았으면 <code>Add files or photos</code>로 다시 올린 뒤 보냅니다</td>
+    </tr>
+    <tr>
+      <td>이서연이 링크를 열지 못합니다</td>
+      <td>공유한 Docs는 Claude 계정이 있어야 열립니다. 이서연에게 Claude 계정이 있는지 확인합니다</td>
+    </tr>
+  </tbody>
+</table>
+
+<blockquote>
+  <p><strong>→ 다음 강의</strong> 이번 강에서는 Docs로 글을 한 장의 문서로 받아 고르고 고치고 Markdown으로 꺼냈습니다.<br />
+7강에서는 한글 문서가 왜 다루기 어려운지, HWP와 HWPX는 무엇이 다른지 알아봅니다.</p>
+</blockquote>
+
+    </div>
+    <script>window.SX_PROMPTS = null;</script>
+    <nav class="post-nav" aria-label="이전·다음 강의">
+      <a class="post-nav-link prev" href="/claude-work/a-5/"><small>← 이전 강의</small><strong>5강. 결과를 Word, Excel, PowerPoint 파일로 받기</strong></a>
+      <a class="post-nav-link next" href="/claude-work/b-1/"><small>다음 강의 →</small><strong>7강. HWP와 HWPX는 무엇이 다른가</strong></a>
+    </nav>
+    
+    <a class="back-list" href="/claude-work/">‹ Claude로 업무하기 강의 목차로</a>
+  </article>
+  <aside class="toc" aria-label="목차">
+    <div class="toc-inner">
+      <p class="toc-title">목차</p>
+      <ol class="toc-list"></ol>
+    </div>
+  </aside>
+</div>
+
+    <footer class="site-footer">
+      <div class="wrap"><div class="foot-inner"><span>© 2026 BasicLike. 강의 자료의 무단 전재와 재배포를 금합니다.</span><span>GitHub Pages로 만든 강의 자료</span></div></div>
+    </footer>
+  </main>
+  <div class="search" id="search" hidden data-src="/search.json">
+  <div class="search-backdrop" data-close></div>
+  <div class="search-box" role="dialog" aria-modal="true" aria-label="글 검색">
+    <div class="search-field">
+      <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M20 20l-3.5-3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <input id="search-input" type="search" placeholder="강의 제목으로 찾기" autocomplete="off" aria-label="검색어">
+      <button class="search-close" type="button" data-close aria-label="검색 닫기"><kbd>Esc</kbd></button>
+    </div>
+    <p class="search-label" id="search-label"></p>
+    <ul class="search-results" id="search-results"></ul>
+    <p class="search-hint" id="search-hint"></p>
+  </div>
+</div>
+
+  <button class="to-top" type="button" aria-label="맨 위로">
+    <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M12 19V5M6 11l6-6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </button>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="/assets/js/theme.js?v=fa20369e"></script>
+  <script src="/assets/js/site.js?v=fa20369e"></script>
+</body>
+</html>
