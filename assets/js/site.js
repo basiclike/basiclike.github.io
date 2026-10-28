@@ -556,6 +556,39 @@
     t.insertBefore(cg, t.firstChild);
   });
 
+  // 잠긴 강의 그림 풀기: 배포가 잠긴 강의의 그림을 <이름>.enc로 암호화하고, 그 열쇠를 페이지와 함께 암호화한 meta image-key에 넣는다.
+  // 페이지가 풀린 뒤 그림 자리가 화면에 가까워지면 받아 풀고 blob 주소로 건다. 본문만 잠기고 그림은 평문으로 공개됐기 때문이다(작업 261028-43)
+  var encImgs = document.querySelectorAll('img[data-enc-src]');
+  if (encImgs.length) {
+    var keyMeta = document.querySelector('meta[name="image-key"]');
+    var keyHex = ((keyMeta && keyMeta.getAttribute('content')) || '').match(/../g) || [];
+    var keyBytes = new Uint8Array(keyHex.map(function (h) { return parseInt(h, 16); }));
+    var keyP = window.crypto && crypto.subtle && keyBytes.length === 32
+      ? crypto.subtle.importKey('raw', keyBytes, 'AES-GCM', false, ['decrypt'])
+      : Promise.reject(new Error('그림 열쇠가 없다'));
+    keyP.catch(function () {});
+    var encFail = function (img) {
+      var note = document.createElement('p');
+      note.className = 'enc-img-fail';
+      note.textContent = '그림을 열지 못했습니다. 페이지를 새로 고쳐 비밀번호를 다시 넣어 주세요.';
+      img.insertAdjacentElement('afterend', note);
+    };
+    var encLoad = function (img) {
+      Promise.all([keyP, fetch(img.getAttribute('data-enc-src')).then(function (r) { if (!r.ok) throw new Error(r.status); return r.arrayBuffer(); })])
+        .then(function (v) { var b = new Uint8Array(v[1]); return crypto.subtle.decrypt({ name: 'AES-GCM', iv: b.slice(0, 12) }, v[0], b.slice(12)); })
+        .then(function (plain) { img.src = URL.createObjectURL(new Blob([plain], { type: img.getAttribute('data-enc-type') || '' })); })
+        .catch(function () { encFail(img); });
+    };
+    if ('IntersectionObserver' in window) {
+      var encIo = new IntersectionObserver(function (es) {
+        es.forEach(function (e) { if (e.isIntersecting) { encIo.unobserve(e.target); encLoad(e.target); } });
+      }, { rootMargin: '800px 0px' });
+      encImgs.forEach(function (img) { encIo.observe(img); });
+    } else {
+      encImgs.forEach(encLoad);
+    }
+  }
+
   // 그림 크게 보기: 본문 그림(.sx-img)을 누르면 어두운 바탕 위에 크게 띄우고, 오른쪽 위 닫기 버튼, 바깥 누르기, Esc로 닫는다.
   // 그림 아래에는 캡션을 둔다. 가로로 긴 그림과 화면 캡처의 작은 글자를 휴대폰에서도 읽게 하기 위해서다(작업 261028-34)
   var zoomImgs = document.querySelectorAll('.article .sx-img img');
