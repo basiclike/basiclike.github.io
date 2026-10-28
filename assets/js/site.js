@@ -410,6 +410,7 @@
         if (before) lines.push('앞 내용: ' + clip(before));
         if (after) lines.push('뒤 내용: ' + clip(after));
         lines.push('내용: ' + fig._promptDesc);
+        lines.push('비율: 내용에 맞는 가로 비율로 만든다. 단계나 흐름이 옆으로 이어지면 가로로 길게 만들어도 좋다.');  // 그림 비율을 16:9 하나로 묶지 않는다(작업 261028-33)
         lines.push('파일명은 ' + fig._promptId);
         // 저장 위치: 사용자가 그림을 넣는 받는 폴더(작업 공간의 raw-captures/<강의 ID>/)까지 적는다(작업 261028-28)
         var slug = (location.pathname.split('/').filter(Boolean)[0] || '');
@@ -554,6 +555,46 @@
     });
     t.insertBefore(cg, t.firstChild);
   });
+
+  // 그림 크게 보기: 본문 그림(.sx-img)을 누르면 어두운 바탕 위에 크게 띄우고, 오른쪽 위 닫기 버튼, 바깥 누르기, Esc로 닫는다.
+  // 그림 아래에는 캡션을 둔다. 가로로 긴 그림과 화면 캡처의 작은 글자를 휴대폰에서도 읽게 하기 위해서다(작업 261028-34)
+  var zoomImgs = document.querySelectorAll('.article .sx-img img');
+  if (zoomImgs.length) {
+    var zoom = document.createElement('div');
+    zoom.className = 'img-zoom';
+    zoom.hidden = true;
+    zoom.setAttribute('role', 'dialog');
+    zoom.setAttribute('aria-modal', 'true');
+    zoom.setAttribute('aria-label', '그림 크게 보기');
+    zoom.innerHTML = '<button type="button" class="img-zoom-close" aria-label="닫기">&times;</button><img alt=""><p class="img-zoom-cap"></p>';
+    document.body.appendChild(zoom);
+    var zImg = zoom.querySelector('img'), zCap = zoom.querySelector('.img-zoom-cap'), zClose = zoom.querySelector('.img-zoom-close'), zFrom = null;
+    var closeZoom = function () {
+      if (zoom.hidden) return;
+      zoom.hidden = true;
+      document.documentElement.classList.remove('img-zoom-open');
+      if (zFrom) zFrom.focus();
+    };
+    zoomImgs.forEach(function (img) {
+      img.setAttribute('tabindex', '0');
+      var open = function () {
+        var fig = img.closest('figure');
+        var cap = fig && fig.querySelector('figcaption');
+        zImg.src = img.currentSrc || img.src;
+        zImg.alt = img.alt || '';
+        zCap.textContent = cap ? cap.textContent.trim() : (img.alt || '');
+        zCap.hidden = !zCap.textContent;
+        zFrom = img;
+        zoom.hidden = false;
+        document.documentElement.classList.add('img-zoom-open');
+        zClose.focus();
+      };
+      img.addEventListener('click', open);
+      img.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } });
+    });
+    zoom.addEventListener('click', closeZoom);
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeZoom(); });
+  }
 
   // 코드 색: 코드 블록의 language-<이름> class를 highlight.js 언어 이름으로 바꾼 뒤 칠하고 복사 버튼을 단다
   var langMap = { shell: 'bash', bash: 'bash', powershell: 'powershell', sql: 'sql', text: 'plaintext', claude: 'plaintext', chatgpt: 'plaintext', python: 'python', javascript: 'javascript', html: 'xml', css: 'css', json: 'json', yaml: 'yaml', csharp: 'csharp' };
