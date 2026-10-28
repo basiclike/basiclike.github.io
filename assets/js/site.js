@@ -296,7 +296,9 @@
             // 설명 맨 앞의 종류(장면 그림., 기술 그림.)로 스타일 줄을 고르고, 종류와 섹션 제목을 뗀 나머지를 내용으로 쓴다(작업 261028-09)
             fig._promptTech = /^기술 그림\./.test(descText);
             fig._promptId = m[2];
-            fig._promptDesc = descText.replace(/^(장면|기술) 그림\.\s*/, '').replace(/^\d+(\.\d+)*\s+[^.]*\.\s*/, '').replace(/\.?$/, '.');
+            var descRest = descText.replace(/^(장면|기술) 그림\.\s*/, '').replace(/^\d+(\.\d+)*\s+[^.]*\.\s*/, '').split(/\s*예시:\s*/);
+            fig._promptDesc = descRest[0].replace(/\.$/, '').replace(/[^?!]$/, '$&.');
+            fig._promptExample = descRest.slice(1).join(' 예시: ').trim();
             fig.innerHTML = '<div class="sx-frame sx-has-prompt"><span class="sx-kind">' + m[1] + '</span><span class="sx-id">' + m[2] + '</span><pre class="sx-prompt"></pre><button type="button" class="sx-copy">프롬프트 복사</button></div>';
             var copyBtn = fig.querySelector('.sx-copy');
             copyBtn.addEventListener('click', function () {
@@ -383,8 +385,7 @@
         if (!el || !/^(P|UL|OL)$/.test(el.tagName) || el.classList.contains('sx-lead')) return '';
         return el.textContent.replace(/\s+/g, ' ').trim();
       };
-      var GUIDE_SCENE = '가장 중요한 것은 제목과 주제야. 장면, 인물, 구성, 배치는 제목과 주제가 잘 전달되도록 네가 정하고 바꿔도 괜찮아.';
-      var GUIDE_TECH = '가장 중요한 것은 제목과 주제야. 구성과 배치는 제목과 주제가 잘 전달되도록 네가 정하고 바꿔도 괜찮지만, 주제에 든 값(수치, 시각, 주소)은 그대로 써줘.';
+      var GUIDE = '가장 중요한 것은 제목과 주제야. 장면, 인물, 구성, 배치는 제목과 주제가 잘 전달되도록 네가 정하고 바꿔도 괜찮아. 예시는 예시일 뿐이야. 더 나은 예시가 있으면 바꿔도 괜찮아.';
       var PROMPT_ROOT = 'C:\\Users\\ChoiS\\OneDrive\\WorkClaude\\lecture\\2-topics';  // 받는 폴더가 있는 강의 대주제 폴더(이 PC)
       var lecTitle = (document.title.split(' · ')[0] || '').replace(/^(\d+강)\.\s*(.*)$/, '$1 "$2"');
       lecture.querySelectorAll('.sx-shot').forEach(function (fig) {
@@ -405,8 +406,10 @@
           var n = head.querySelector('.sx-subnum');
           heading += ' — ' + head.textContent.replace(n ? n.textContent : '', '').trim();
         }
-        var lines = ['anime-style 지침으로 이미지를 만들어줘.', fig._promptTech ? GUIDE_TECH : GUIDE_SCENE, '',
-          '제목: ' + heading, '주제: ' + fig._promptDesc, '참고 맥락(그림 구성을 정하라는 지시가 아님):'];
+        var lines = ['anime-style 지침으로 이미지를 만들어줘.', GUIDE, '',
+          '제목: ' + heading, '주제: ' + fig._promptDesc];
+        if (fig._promptExample) lines.push('예시: ' + fig._promptExample);
+        lines.push('참고 맥락:');
         if (before) lines.push('앞 내용: ' + before);
         if (after) lines.push('뒤 내용: ' + after);
         lines.push('파일명은 ' + fig._promptId);
