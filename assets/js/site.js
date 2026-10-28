@@ -377,13 +377,14 @@
         });
       });
 
-      // 이미지 자리의 프롬프트 글: 쓰이는 곳(강의와 소제목), 앞 내용과 뒤 내용(그 자리에 문단이 있을 때만), 내용을 채운다.
+      // 이미지 자리의 프롬프트 글: 제목(강의와 소제목), 주제, 참고 맥락인 앞 내용과 뒤 내용(그 자리에 문단이 있을 때만)을 채운다.
       // 앞뒤 내용은 문단과 목록만 읽고 질문 줄, 이어서 줄, 그림과 자리, 참고 글은 건너뛴다
       var textOf = function (el) {
         if (!el || !/^(P|UL|OL)$/.test(el.tagName) || el.classList.contains('sx-lead')) return '';
         return el.textContent.replace(/\s+/g, ' ').trim();
       };
-      var clip = function (t) { return t.length > 150 ? t.slice(0, 150) + '…' : t; };
+      var GUIDE_SCENE = '가장 중요한 것은 제목과 주제야. 장면, 인물, 구성, 배치는 제목과 주제가 잘 전달되도록 네가 정하고 바꿔도 괜찮아.';
+      var GUIDE_TECH = '가장 중요한 것은 제목과 주제야. 구성과 배치는 제목과 주제가 잘 전달되도록 네가 정하고 바꿔도 괜찮지만, 주제에 든 값(수치, 시각, 주소)은 그대로 써줘.';
       var PROMPT_ROOT = 'C:\\Users\\ChoiS\\OneDrive\\WorkClaude\\lecture\\2-topics';  // 받는 폴더가 있는 강의 대주제 폴더(이 PC)
       var lecTitle = (document.title.split(' · ')[0] || '').replace(/^(\d+강)\.\s*(.*)$/, '$1 "$2"');
       lecture.querySelectorAll('.sx-shot').forEach(function (fig) {
@@ -399,18 +400,15 @@
           var t = textOf(el); if (t) texts.push(t);
         }
         after = texts.join(' ');
-        var where = '';
+        var heading = lecTitle;
         if (head) {
           var n = head.querySelector('.sx-subnum');
-          var name = head.textContent.replace(n ? n.textContent : '', '').trim();
-          where = (n ? n.textContent + ' ' : '') + '"' + name + '" 소제목 그림';
+          heading += ' — ' + head.textContent.replace(n ? n.textContent : '', '').trim();
         }
-        var lines = [fig._promptTech ? 'tech-style 지침으로 이미지를 만들어줘.' : 'anime-style 지침으로 이미지를 만들어줘.', '',
-          '쓰이는 곳: 강의 사이트 ' + lecTitle + (where ? '의 ' + where : '')];
-        if (before) lines.push('앞 내용: ' + clip(before));
-        if (after) lines.push('뒤 내용: ' + clip(after));
-        lines.push('내용: ' + fig._promptDesc);
-        lines.push('비율: 내용에 맞는 가로 비율로 만든다. 단계나 흐름이 옆으로 이어지면 가로로 길게 만들어도 좋다.');  // 그림 비율을 16:9 하나로 묶지 않는다(작업 261028-33)
+        var lines = ['anime-style 지침으로 이미지를 만들어줘.', fig._promptTech ? GUIDE_TECH : GUIDE_SCENE, '',
+          '제목: ' + heading, '주제: ' + fig._promptDesc, '참고 맥락(그림 구성을 정하라는 지시가 아님):'];
+        if (before) lines.push('앞 내용: ' + before);
+        if (after) lines.push('뒤 내용: ' + after);
         lines.push('파일명은 ' + fig._promptId);
         // 저장 위치: 사용자가 그림을 넣는 받는 폴더(작업 공간의 raw-captures/<강의 ID>/)까지 적는다(작업 261028-28)
         var slug = (location.pathname.split('/').filter(Boolean)[0] || '');
