@@ -384,6 +384,7 @@
         return el.textContent.replace(/\s+/g, ' ').trim();
       };
       var clip = function (t) { return t.length > 150 ? t.slice(0, 150) + '…' : t; };
+      var PROMPT_ROOT = 'C:\\Users\\ChoiS\\OneDrive\\WorkClaude\\lecture\\2-topics';  // 받는 폴더가 있는 강의 대주제 폴더(이 PC)
       var lecTitle = (document.title.split(' · ')[0] || '').replace(/^(\d+강)\.\s*(.*)$/, '$1 "$2"');
       lecture.querySelectorAll('.sx-shot').forEach(function (fig) {
         if (!fig._promptDesc) return;
@@ -410,6 +411,10 @@
         if (after) lines.push('뒤 내용: ' + clip(after));
         lines.push('내용: ' + fig._promptDesc);
         lines.push('파일명은 ' + fig._promptId);
+        // 저장 위치: 사용자가 그림을 넣는 받는 폴더(작업 공간의 raw-captures/<강의 ID>/)까지 적는다(작업 261028-28)
+        var slug = (location.pathname.split('/').filter(Boolean)[0] || '');
+        var lid = fig._promptId.replace(/-\d+$/, '');
+        lines.push('저장 위치: ' + PROMPT_ROOT + '\\' + slug + '\\5-lessons\\images\\raw-captures\\' + lid + '\\' + fig._promptId + '.png');
         fig.querySelector('.sx-prompt').textContent = lines.join('\n');
       });
     }
