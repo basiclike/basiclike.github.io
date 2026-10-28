@@ -405,7 +405,7 @@
           var name = head.textContent.replace(n ? n.textContent : '', '').trim();
           where = (n ? n.textContent + ' ' : '') + '"' + name + '" 소제목 그림';
         }
-        var lines = [fig._promptTech ? '기술 교재형 일러스트(Tech textbook) 지침으로 이미지를 만들어줘.' : 'soft-anime-webtoon 기준 화풍으로 이미지를 만들어줘.', '',
+        var lines = [fig._promptTech ? 'tech-style 지침으로 이미지를 만들어줘.' : 'anime-style 지침으로 이미지를 만들어줘.', '',
           '쓰이는 곳: 강의 사이트 ' + lecTitle + (where ? '의 ' + where : '')];
         if (before) lines.push('앞 내용: ' + clip(before));
         if (after) lines.push('뒤 내용: ' + clip(after));
@@ -517,13 +517,15 @@
     w.appendChild(t);
   });
 
-  // 표의 짧은 칸 맞추기: 가장 긴 글(머리 칸 포함)이 SHORT_CELL자 이하인 칸은 그 글이 한 줄에 드는 너비만 쓰고,
+  // 표의 짧은 칸 맞추기: 가장 긴 글(머리 칸 포함)이 SHORT_CELL자 이하인 칸과, LABEL_CELL자 이하이면서 표에서 가장 긴 칸의
+  // 절반 이하인 첫 칸은 그 글이 한 줄에 드는 너비만 쓰고(작업 261028-31),
   // 나머지 칸은 table-layout: fixed가 남은 너비를 같게 나눈다. 모든 칸이 짧거나 길면 모든 칸을 같게 둔다(작업 261028-09)
   var SHORT_CELL = 8;
+  var LABEL_CELL = 12;  // 첫 칸(이름표 칸)은 12자까지, 가장 긴 칸의 절반 이하이면 짧은 칸으로 본다. 맞세운 두 칸(공부와 실무)은 같게 남긴다
   var measure = document.createElement('canvas').getContext('2d');
   document.querySelectorAll('.article table').forEach(function (t) {
     if (!t.rows.length || t.querySelector('colgroup')) return;
-    var n = t.rows[0].cells.length, need = [], short = 0;
+    var n = t.rows[0].cells.length, need = [], short = 0, lens = [], pxs = [];
     for (var c = 0; c < n; c++) {
       var len = 0, px = 0;
       for (var r = 0; r < t.rows.length; r++) {
@@ -534,9 +536,14 @@
         measure.font = cs.fontWeight + ' ' + cs.fontSize + ' ' + cs.fontFamily;
         px = Math.max(px, measure.measureText(text).width + parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight) + 4);
       }
-      need.push(len <= SHORT_CELL ? px : 0);
-      if (len <= SHORT_CELL) short++;
+      lens.push(len); pxs.push(px);
     }
+    var longest = Math.max.apply(null, lens);
+    lens.forEach(function (len, c) {
+      var isShort = len <= SHORT_CELL || (c === 0 && len <= LABEL_CELL && len * 2 <= longest);
+      need.push(isShort ? pxs[c] : 0);
+      if (isShort) short++;
+    });
     if (short === 0 || short === n) return;
     var base = parseFloat(getComputedStyle(t).fontSize);
     var cg = document.createElement('colgroup');
