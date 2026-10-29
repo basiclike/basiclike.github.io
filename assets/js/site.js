@@ -278,7 +278,7 @@
       };
       var shot = function (p) {
         var img = p.children.length === 1 && p.firstElementChild.tagName === 'IMG' && p.textContent.trim() === '' ? p.firstElementChild : null;
-        var m = !img && p.innerHTML.match(/^\s*\[(화면 캡처|인포그래픽|이미지|삽화): ([^\s—]+)\s*—\s*([\s\S]*?)\]\s*(?:\n\s*((?:▲|&#9650;)[\s\S]*))?$/);
+        var m = !img && p.innerHTML.match(/^\s*\[(화면 캡처|인포그래픽|이미지|삽화): ([^\s—]+)\s*—\s*([\s\S]*?)\]\s*(?:<br\s*\/?>)?\s*((?:▲|&#9650;)[\s\S]*)?$/);
         if (!img && !m) return null;
         var fig = document.createElement('figure'); fig.className = 'sx-shot';
         var cap = document.createElement('figcaption');
