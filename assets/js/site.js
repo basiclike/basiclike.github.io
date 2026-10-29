@@ -288,19 +288,10 @@
         } else {
           var desc = m[3].replace(/\s*프롬프트:\s*[^\s<]+\s*$/, '');
           if (m[1] === '이미지') {
-            // 이미지 자리: 프롬프트 글상자와 복사 버튼을 두고, 파일명은 글상자 위에 따로 크게 보인다. 프롬프트 글은 소제목 번호가
-            // 붙은 뒤 앞뒤 문단을 읽어 채운다(아래 fillPrompts). 사용자가 그림을 만들 때 프롬프트 파일을 열지 않고 사이트에서
-            // 바로 복사해 쓰기 위해서다(lecture/specs/site/design.md "이미지 자리의 프롬프트")
-            var tmp = document.createElement('div'); tmp.innerHTML = desc;
-            var descText = tmp.textContent.trim();
-            // 설명 맨 앞의 종류(장면 그림., 기술 그림.)로 스타일 줄을 고르고, 종류와 섹션 제목을 뗀 나머지를 내용으로 쓴다(작업 261028-09)
-            fig._promptTech = /^기술 그림\./.test(descText);
+            // 이미지 자리: 프롬프트 글상자와 복사 버튼을 두고, 파일명은 글상자 위에 따로 크게 보인다. 글은 소주제별 프롬프트 파일에 Claude가
+            // 쓴 글 그대로다(아래 SX_PROMPTS). 사용자가 그림을 만들 때 프롬프트 파일을 열지 않고 사이트에서 바로 복사해 쓰기 위해서다
+            // (lecture/specs/site/design.md "강의 페이지 동작과 모양")
             fig._promptId = m[2];
-            var descRest = descText.replace(/^(장면|기술) 그림\.\s*/, '').replace(/^\d+(\.\d+)*\s+[^.]*\.\s*/, '').split(/\s*예시:\s*/);
-            fig._promptDesc = descRest[0].replace(/\.$/, '').replace(/[^?!]$/, '$&.');
-            fig._promptExample = descRest.slice(1).join(' 예시: ').trim();
-            var capTmp = document.createElement('div'); capTmp.innerHTML = m[4] ? capText(m[4]) : '';
-            fig._promptCap = capTmp.textContent.trim();
             fig.innerHTML = '<div class="sx-frame sx-has-prompt"><span class="sx-kind">' + m[1] + '</span><span class="sx-id">' + m[2] + '</span><pre class="sx-prompt"></pre><button type="button" class="sx-copy">프롬프트 복사</button></div>';
             var copyBtn = fig.querySelector('.sx-copy');
             copyBtn.addEventListener('click', function () {
@@ -381,54 +372,19 @@
         });
       });
 
-      // 이미지 자리의 프롬프트 글: 제목(강의와 소제목), 주제, 참고 맥락인 앞 내용과 뒤 내용(그 자리에 문단이 있을 때만)을 채운다.
-      // 앞뒤 내용은 문단과 목록만 읽고 질문 줄, 이어서 줄, 그림과 자리, 참고 글은 건너뛴다
-      var textOf = function (el) {
-        if (!el || !/^(P|UL|OL)$/.test(el.tagName) || el.classList.contains('sx-lead')) return '';
-        return el.textContent.replace(/\s+/g, ' ').trim();
-      };
-      var GUIDE = '가장 중요한 것은 제목과 보여 주는 것과 주제야. 장면, 인물, 구성, 배치는 제목과 보여 주는 것과 주제가 잘 전달되도록 네가 정하고 바꿔도 괜찮아. 예시는 예시일 뿐이야. 더 나은 예시가 있으면 바꿔도 괜찮아.';
       var PROMPT_ROOT = 'C:\\Users\\ChoiS\\OneDrive\\WorkClaude\\lecture\\2-topics';  // 받는 폴더가 있는 강의 대주제 폴더(이 PC)
-      // 저장 위치: 사용자가 그림을 넣는 받는 폴더(작업 공간의 image-inbox/<강의 ID>/)까지 적는다(작업 261028-28). 프롬프트 파일의 글에 이 줄이 있으면 또 붙이지 않고, 파일에 글이 없어 조립한 프롬프트에만 붙인다(작업 261029-69)
+      // 저장 위치: 사용자가 그림을 넣는 받는 폴더(작업 공간의 image-inbox/<강의 ID>/)까지 적는다(작업 261028-28). 프롬프트 파일의 글에 이 줄이 있으면 또 붙이지 않는다(작업 261029-69)
       var saveLine = function (id) {
         var slug = (location.pathname.split('/').filter(Boolean)[0] || '');
         return '저장 위치: ' + PROMPT_ROOT + '\\' + slug + '\\5-lessons\\image-inbox\\' + id.replace(/-\d+$/, '') + '\\' + id + '.png';
       };
-      var lecTitle = (document.title.split(' · ')[0] || '').replace(/^(\d+강)\.\s*(.*)$/, '$1 "$2"');
+      // 이미지 자리의 프롬프트 글: 소주제별 프롬프트 파일(5-lessons/image-prompts/)에 Claude가 쓴 글을 그대로 보인다(레이아웃이 SX_PROMPTS로 넣는다).
+      // 글에 저장 위치 줄이 없으면 끝에 붙인다. 파일에 글이 없는 자리는 "프롬프트 파일에 없음"만 보이고 복사 버튼을 두지 않는다(작업 261029-78)
       lecture.querySelectorAll('.sx-shot').forEach(function (fig) {
-        if (!fig._promptDesc) return;
-        var group = fig.closest('.sx-group'), head = null, before = '', after = '', el, texts = [];
-        for (el = group.previousElementSibling; el; el = el.previousElementSibling) {
-          if (el.tagName === 'H3') { head = head || el; if (before) break; continue; }
-          if (/^H[1-2]$/.test(el.tagName)) break;
-          if (!before) before = textOf(el);
-          if (before && head) break;
-        }
-        for (el = group.nextElementSibling; el && texts.length < 2 && !/^H[1-3]$/.test(el.tagName); el = el.nextElementSibling) {
-          var t = textOf(el); if (t) texts.push(t);
-        }
-        after = texts.join(' ');
-        var heading = lecTitle;
-        if (head) {
-          var n = head.querySelector('.sx-subnum');
-          heading += ' — ' + head.textContent.replace(n ? n.textContent : '', '').trim();
-        }
-        var lines = ['anime-style 지침으로 이미지를 만들어줘.', GUIDE, '',
-          '제목: ' + heading];
-        if (fig._promptCap) lines.push('보여 주는 것: ' + fig._promptCap);
-        lines.push('주제: ' + fig._promptDesc);
-        if (fig._promptExample) lines.push('예시: ' + fig._promptExample);
-        lines.push('참고 맥락:');
-        if (before) lines.push('앞 내용: ' + before);
-        if (after) lines.push('뒤 내용: ' + after);
-        lines.push('파일명은 ' + fig._promptId);
-        lines.push(saveLine(fig._promptId));
-        fig.querySelector('.sx-prompt').textContent = lines.join('\n');
-      });
-      // 소주제별 프롬프트 파일에 Claude가 쓴 글이 있는 이미지 자리는 그 글을 그대로 보인다(레이아웃이 SX_PROMPTS로 넣는다)
-      lecture.querySelectorAll('.sx-shot').forEach(function (fig) {
-        var text = fig._promptId && window.SX_PROMPTS && window.SX_PROMPTS[fig._promptId];
-        if (text) fig.querySelector('.sx-prompt').textContent = text.replace(/\s+$/, '') + (/^저장 위치:/m.test(text) ? '' : '\n' + saveLine(fig._promptId));
+        if (!fig._promptId) return;
+        var text = window.SX_PROMPTS && window.SX_PROMPTS[fig._promptId];
+        fig.querySelector('.sx-prompt').textContent = text ? text.replace(/\s+$/, '') + (/^저장 위치:/m.test(text) ? '' : '\n' + saveLine(fig._promptId)) : '프롬프트 파일에 없음';
+        if (!text) fig.querySelector('.sx-copy').remove();
       });
     }
 
