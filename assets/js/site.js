@@ -373,13 +373,13 @@
       });
 
       var PROMPT_ROOT = 'C:\\Users\\ChoiS\\OneDrive\\WorkClaude\\lecture\\topics';  // 받는 폴더가 있는 강의 대주제 폴더(이 PC)
-      // 저장 위치: 사용자가 그림을 넣는 받는 폴더(작업 공간의 image-inbox/<강의 ID>/)까지 적는다(작업 261028-28). 프롬프트 파일의 글에 이 줄이 있으면 또 붙이지 않는다(작업 261029-69)
+      // 저장 위치: 사용자가 그림을 넣는 받는 폴더(작업 공간의 02. image-inbox/)까지 적는다(작업 261028-28). 프롬프트 파일의 글에 이 줄이 있으면 또 붙이지 않는다(작업 261029-69)
       var saveLine = function (id) {
         // 대주제 폴더 이름은 `<num 두 자리>-<slug>`다. 레이아웃이 SX_TOPIC_DIR로 넣고, 없으면 주소의 slug를 쓴다
         var slug = window.SX_TOPIC_DIR || (location.pathname.split('/').filter(Boolean)[0] || '');
-        return '저장 위치: ' + PROMPT_ROOT + '\\' + slug + '\\05-lessons\\image-inbox\\' + id.replace(/-\d+$/, '') + '\\' + id + '.png';
+        return '저장 위치: ' + PROMPT_ROOT + '\\' + slug + '\\05-lessons\\02. image-inbox\\' + id + '.png';
       };
-      // 이미지 자리의 프롬프트 글: 소주제별 프롬프트 파일(05-lessons/image-prompts/)에 Claude가 쓴 글을 그대로 보인다(레이아웃이 SX_PROMPTS로 넣는다).
+      // 이미지 자리의 프롬프트 글: 소주제별 프롬프트 파일(05-lessons/01. image-prompts/)에 Claude가 쓴 글을 그대로 보인다(레이아웃이 SX_PROMPTS로 넣는다).
       // 글에 저장 위치 줄이 없으면 끝에 붙인다. 파일에 글이 없는 자리는 "프롬프트 파일에 없음"만 보이고 복사 버튼을 두지 않는다(작업 261029-78)
       lecture.querySelectorAll('.sx-shot').forEach(function (fig) {
         if (!fig._promptId) return;
