@@ -389,6 +389,11 @@
       };
       var GUIDE = '가장 중요한 것은 제목과 보여 주는 것과 주제야. 장면, 인물, 구성, 배치는 제목과 보여 주는 것과 주제가 잘 전달되도록 네가 정하고 바꿔도 괜찮아. 예시는 예시일 뿐이야. 더 나은 예시가 있으면 바꿔도 괜찮아.';
       var PROMPT_ROOT = 'C:\\Users\\ChoiS\\OneDrive\\WorkClaude\\lecture\\2-topics';  // 받는 폴더가 있는 강의 대주제 폴더(이 PC)
+      // 저장 위치: 사용자가 그림을 넣는 받는 폴더(작업 공간의 image-inbox/<강의 ID>/)까지 적는다(작업 261028-28). 프롬프트 파일의 글에 이 줄이 있으면 또 붙이지 않고, 파일에 글이 없어 조립한 프롬프트에만 붙인다(작업 261029-69)
+      var saveLine = function (id) {
+        var slug = (location.pathname.split('/').filter(Boolean)[0] || '');
+        return '저장 위치: ' + PROMPT_ROOT + '\\' + slug + '\\5-lessons\\image-inbox\\' + id.replace(/-\d+$/, '') + '\\' + id + '.png';
+      };
       var lecTitle = (document.title.split(' · ')[0] || '').replace(/^(\d+강)\.\s*(.*)$/, '$1 "$2"');
       lecture.querySelectorAll('.sx-shot').forEach(function (fig) {
         if (!fig._promptDesc) return;
@@ -417,16 +422,13 @@
         if (before) lines.push('앞 내용: ' + before);
         if (after) lines.push('뒤 내용: ' + after);
         lines.push('파일명은 ' + fig._promptId);
-        // 저장 위치: 사용자가 그림을 넣는 받는 폴더(작업 공간의 raw-captures/<강의 ID>/)까지 적는다(작업 261028-28)
-        var slug = (location.pathname.split('/').filter(Boolean)[0] || '');
-        var lid = fig._promptId.replace(/-\d+$/, '');
-        lines.push('저장 위치: ' + PROMPT_ROOT + '\\' + slug + '\\5-lessons\\images\\raw-captures\\' + lid + '\\' + fig._promptId + '.png');
+        lines.push(saveLine(fig._promptId));
         fig.querySelector('.sx-prompt').textContent = lines.join('\n');
       });
       // 소주제별 프롬프트 파일에 Claude가 쓴 글이 있는 이미지 자리는 그 글을 그대로 보인다(레이아웃이 SX_PROMPTS로 넣는다)
       lecture.querySelectorAll('.sx-shot').forEach(function (fig) {
         var text = fig._promptId && window.SX_PROMPTS && window.SX_PROMPTS[fig._promptId];
-        if (text) fig.querySelector('.sx-prompt').textContent = text;
+        if (text) fig.querySelector('.sx-prompt').textContent = text.replace(/\s+$/, '') + (/^저장 위치:/m.test(text) ? '' : '\n' + saveLine(fig._promptId));
       });
     }
 
