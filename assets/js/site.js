@@ -290,7 +290,7 @@
           if (m[1] === '이미지') {
             // 이미지 자리: 프롬프트 글상자와 복사 버튼을 두고, 파일명은 글상자 위에 따로 크게 보인다. 글은 소주제별 프롬프트 파일에 Claude가
             // 쓴 글 그대로다(아래 SX_PROMPTS). 사용자가 그림을 만들 때 프롬프트 파일을 열지 않고 사이트에서 바로 복사해 쓰기 위해서다
-            // (lecture/specs/site/design.md "강의 페이지 동작과 모양")
+            // (lecture/02-design/site/index.md "강의 페이지 동작과 모양")
             fig._promptId = m[2];
             fig.innerHTML = '<div class="sx-frame sx-has-prompt"><span class="sx-kind">' + m[1] + '</span><span class="sx-id">' + m[2] + '</span><pre class="sx-prompt"></pre><button type="button" class="sx-copy">프롬프트 복사</button></div>';
             var copyBtn = fig.querySelector('.sx-copy');
@@ -372,13 +372,14 @@
         });
       });
 
-      var PROMPT_ROOT = 'C:\\Users\\ChoiS\\OneDrive\\WorkClaude\\lecture\\2-topics';  // 받는 폴더가 있는 강의 대주제 폴더(이 PC)
+      var PROMPT_ROOT = 'C:\\Users\\ChoiS\\OneDrive\\WorkClaude\\lecture\\topics';  // 받는 폴더가 있는 강의 대주제 폴더(이 PC)
       // 저장 위치: 사용자가 그림을 넣는 받는 폴더(작업 공간의 image-inbox/<강의 ID>/)까지 적는다(작업 261028-28). 프롬프트 파일의 글에 이 줄이 있으면 또 붙이지 않는다(작업 261029-69)
       var saveLine = function (id) {
-        var slug = (location.pathname.split('/').filter(Boolean)[0] || '');
-        return '저장 위치: ' + PROMPT_ROOT + '\\' + slug + '\\5-lessons\\image-inbox\\' + id.replace(/-\d+$/, '') + '\\' + id + '.png';
+        // 대주제 폴더 이름은 `<num 두 자리>-<slug>`다. 레이아웃이 SX_TOPIC_DIR로 넣고, 없으면 주소의 slug를 쓴다
+        var slug = window.SX_TOPIC_DIR || (location.pathname.split('/').filter(Boolean)[0] || '');
+        return '저장 위치: ' + PROMPT_ROOT + '\\' + slug + '\\05-lessons\\image-inbox\\' + id.replace(/-\d+$/, '') + '\\' + id + '.png';
       };
-      // 이미지 자리의 프롬프트 글: 소주제별 프롬프트 파일(5-lessons/image-prompts/)에 Claude가 쓴 글을 그대로 보인다(레이아웃이 SX_PROMPTS로 넣는다).
+      // 이미지 자리의 프롬프트 글: 소주제별 프롬프트 파일(05-lessons/image-prompts/)에 Claude가 쓴 글을 그대로 보인다(레이아웃이 SX_PROMPTS로 넣는다).
       // 글에 저장 위치 줄이 없으면 끝에 붙인다. 파일에 글이 없는 자리는 "프롬프트 파일에 없음"만 보이고 복사 버튼을 두지 않는다(작업 261029-78)
       lecture.querySelectorAll('.sx-shot').forEach(function (fig) {
         if (!fig._promptId) return;
