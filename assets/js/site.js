@@ -361,7 +361,7 @@
             var after = next.nextElementSibling; note.appendChild(next); next = after;
           }
         });
-        // 항: `#### 제목`(더 알아보기 빼고)과 그 아래 글(다음 제목 앞까지)을 번호 없는 작고 옅은 묶음(hang)으로 묶어 절 안에 든 것으로 보이게 한다(사용자 결정, 2026-11-01)
+        // 항: `#### 제목`(더 알아보기 빼고)과 그 아래 글(다음 제목 앞까지)을 번호 없는 묶음(hang)으로 묶고 제목을 진한 사각 라벨로 그려 절 안에 든 것으로 보이게 한다(사용자 결정, 2026-11-01)
         Array.prototype.slice.call(s._body.children).forEach(function (el) {
           if (el.tagName !== 'H4' || el.classList.contains('more-h')) return;
           var hang = document.createElement('div'); hang.className = 'hang';
@@ -503,7 +503,10 @@
   var SHORT_CELL = 8;
   var LABEL_CELL = 12;  // 첫 칸(이름표 칸)은 12자까지, 가장 긴 칸의 절반 이하이면 짧은 칸으로 본다. 맞세운 두 칸(공부와 실무)은 같게 남긴다
   var measure = document.createElement('canvas').getContext('2d');
+  function fitTables() {
   document.querySelectorAll('.article table').forEach(function (t) {
+    var auto = t.querySelector('colgroup[data-auto]');
+    if (auto) auto.parentNode.removeChild(auto);
     if (!t.rows.length || t.querySelector('colgroup')) return;
     var n = t.rows[0].cells.length, need = [], short = 0, lens = [], pxs = [];
     for (var c = 0; c < n; c++) {
@@ -514,7 +517,7 @@
         var text = cell.textContent.trim(), cs = getComputedStyle(cell);
         len = Math.max(len, text.length);
         measure.font = cs.fontWeight + ' ' + cs.fontSize + ' ' + cs.fontFamily;
-        px = Math.max(px, measure.measureText(text).width + parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight) + 4);
+        px = Math.max(px, measure.measureText(text).width + parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight) + 12);
       }
       lens.push(len); pxs.push(px);
     }
@@ -527,12 +530,21 @@
     if (short === 0 || short === n) return;
     var base = parseFloat(getComputedStyle(t).fontSize);
     var cg = document.createElement('colgroup');
+    cg.setAttribute('data-auto', '1');
     need.forEach(function (px) {
       var col = document.createElement('col');
       if (px) col.style.width = (px / base).toFixed(2) + 'em';
       cg.appendChild(col);
     });
     t.insertBefore(cg, t.firstChild);
+  });
+  }
+  // 칸 너비는 글꼴이 다 받아진 뒤와 테마를 바꿀 때 다시 정하고, 잰 너비에 여유 8px를 더한다. 문서 테마의 명조체가 헥사의 글꼴보다 넓어, 헥사로 정한 너비에서 문서 테마로 바꾸면 "하는 일"이 줄 꺾였다(2026-11-01)
+  fitTables();
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitTables);
+  document.addEventListener('site-theme-change', function () {
+    fitTables();
+    if (document.fonts && document.fonts.ready) requestAnimationFrame(function () { document.fonts.ready.then(fitTables); });
   });
 
   // 잠긴 강의 그림 풀기: 배포가 잠긴 강의의 그림을 <이름>.enc로 암호화하고, 그 열쇠를 페이지와 함께 암호화한 meta image-key에 넣는다.

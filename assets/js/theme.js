@@ -12,6 +12,7 @@
   function apply(t) {
     if (THEMES.indexOf(t) < 0) t = 'hex';
     root.setAttribute('data-theme', t);
+    try { document.dispatchEvent(new Event('site-theme-change')); } catch (e) {}
     try { if (t === 'hex') localStorage.removeItem(KEY); else localStorage.setItem(KEY, t); } catch (e) {}
     mark();
   }
