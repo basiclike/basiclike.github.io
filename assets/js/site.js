@@ -1,5 +1,5 @@
 // 사이트 동작: 좁은 화면 메뉴, 강의 목차(대주제·소주제) 접기, 검색 창, 오른쪽 목차, 읽은 정도 막대, 맨 위로,
-// 강의 글 섹션 접기(펼친 상태로 시작, 모두 접기·펼치기), 표 가로 스크롤, 코드 색과 복사 버튼
+// 강의 글 장 접기(펼친 상태로 시작, 모두 접기·펼치기), 표 가로 스크롤, 코드 색과 복사 버튼
 (function () {
   var body = document.body;
 
@@ -178,7 +178,7 @@
   });
 
   var article = document.getElementById('article');
-  // 강의 글 본문(_layouts/lecture.html의 .post 안). 대주제 화면의 안내 글에는 섹션과 접기를 만들지 않는다
+  // 강의 글 본문(_layouts/lecture.html의 .post 안). 대주제 화면의 안내 글에는 장과 접기를 만들지 않는다
   var lecture = article && article.closest('.post') ? article : null;
 
   // 본문 첫 '# 제목'이 글 제목과 같으면 지워 제목이 두 번 보이지 않게 한다
@@ -188,7 +188,7 @@
     if (first && first.tagName === 'H1' && first.textContent.trim() === postTitle.textContent.trim()) first.remove();
   }
 
-  // 섹션: 본문에서 가장 큰 제목 단계의 제목마다, 그 제목부터 다음 같은 단계 제목 앞까지를 section.sx-sec으로 묶는다.
+  // 장: 본문에서 가장 큰 제목 단계의 제목마다, 그 제목부터 다음 같은 단계 제목 앞까지를 section.sx-sec으로 묶는다.
   // 제목은 머리(.sx-head)에 두고 나머지는 접는 상자(.sx-body)에 넣는다. 모두 펼친 상태로 시작하고, 머리 오른쪽 버튼이나 머리를 누르면 하나씩 접고 편다.
   // 글 front matter에 page_style이 있으면(.sx) 제목 앞에 0부터 번호를 붙이고, 캡처와 ①② 단계를 묶는다(모양은 assets/css/styles/<이름>.css).
   var folds = [];
@@ -332,7 +332,7 @@
         else group.classList.add('sx-solo');
       });
       // 캡처 없이 이어지는 ①② 단계: makeSteps가 단계 문단을 지우므로, 자리 표시를 먼저 넣고 만든 목록으로 바꾼다.
-      // 지운 문단 앞에 넣으려다 오류로 스크립트가 멈춰, 요약 줄과 소제목 번호가 빠진 강의가 있었다(2026-10-19)
+      // 지운 문단 앞에 넣으려다 오류로 스크립트가 멈춰, 요약 줄과 절 번호가 빠진 강의가 있었다(2026-10-19)
       lecture.querySelectorAll('.sx-body > p').forEach(function (p) {
         if (!p.isConnected || !stepMark(p)) return;
         var parent = p.parentNode, spot = document.createComment('steps');
@@ -340,9 +340,9 @@
         parent.replaceChild(makeSteps(p), spot);
       });
 
-      // 섹션 요약 줄과 소제목 번호(골든 HTML의 구조만 참고했고, 모양은 사이트의 제목과 회색 글자 그대로다):
-      // 섹션의 첫 문단이 `→ `로 시작하면 섹션 제목 아래(접어도 보이는 자리)로 옮기고,
-      // 섹션 안의 h3에 N.M, h4에 N.M.K 번호를 붙인다. N은 섹션 번호(0부터)다
+      // 장 요약 줄과 절 번호(골든 HTML의 구조만 참고했고, 모양은 사이트의 제목과 회색 글자 그대로다):
+      // 장의 첫 문단이 `→ `로 시작하면 장 제목 아래(접어도 보이는 자리)로 옮기고,
+      // 장 안의 h3(절)에 N.M 번호를 붙인다. N은 장 번호(0부터)다. h4(항)에는 번호를 붙이지 않는다
       folds.forEach(function (s, i) {
         var first = s._body.firstElementChild;
         if (first && first.tagName === 'P' && /^\s*→\s/.test(first.textContent)) {
@@ -350,7 +350,7 @@
           s.querySelector('.sx-head-text').appendChild(first);
         }
         // 더 알아보기: `#### 더 알아보기: …` 제목과 그 아래 글(다음 제목 앞까지)을 번호 없는 작은 참고 글(more-note)로 묶는다.
-        // 번호를 단 소제목으로 두면 본 흐름처럼 읽혀, 참고사항처럼 작게 보이게 해 달라고 사용자가 짚었다(사용자 결정, 2026-10-22)
+        // 번호를 단 절으로 두면 본 흐름처럼 읽혀, 참고사항처럼 작게 보이게 해 달라고 사용자가 짚었다(사용자 결정, 2026-10-22)
         Array.prototype.slice.call(s._body.children).forEach(function (el) {
           if (el.tagName !== 'H4' || !/^\s*더 알아보기/.test(el.textContent)) return;
           var note = document.createElement('div'); note.className = 'more-note';
@@ -361,12 +361,22 @@
             var after = next.nextElementSibling; note.appendChild(next); next = after;
           }
         });
-        var m = 0, k = 0;
+        // 항: `#### 제목`(더 알아보기 빼고)과 그 아래 글(다음 제목 앞까지)을 번호 없는 작고 옅은 묶음(hang)으로 묶어 절 안에 든 것으로 보이게 한다(사용자 결정, 2026-11-01)
+        Array.prototype.slice.call(s._body.children).forEach(function (el) {
+          if (el.tagName !== 'H4' || el.classList.contains('more-h')) return;
+          var hang = document.createElement('div'); hang.className = 'hang';
+          el.parentNode.insertBefore(hang, el);
+          var next = el;
+          while (next && !(next !== el && /^H[1-4]$/.test(next.tagName))) {
+            var after = next.nextElementSibling; hang.appendChild(next); next = after;
+          }
+        });
+        var m = 0;
         Array.prototype.forEach.call(s._body.children, function (el) {
-          if (el.tagName !== 'H3' && el.tagName !== 'H4') return;
-          if (el.tagName === 'H3') { m += 1; k = 0; } else { k += 1; }
+          if (el.tagName !== 'H3') return;
+          m += 1;
           var num = document.createElement('span'); num.className = 'sx-subnum';
-          num.textContent = el.tagName === 'H3' ? i + '.' + m : i + '.' + m + '.' + k;
+          num.textContent = i + '.' + m;
           el.insertBefore(document.createTextNode(' '), el.firstChild);
           el.insertBefore(num, el.firstChild);
         });
@@ -390,7 +400,7 @@
     }
 
     // 질문: 원고의 `> **❓ 질문**` 인용은 상자로 두지 않고 말풍선 선 그림을 단 질문 줄(q-line)로 바꾼다(사용자 결정, 2026-10-19).
-    // 칸 안의 Q 글자는 섹션 번호 칸(채운 칸 안의 숫자)과 같아 보여 바탕 없는 선 그림으로 바꿨다
+    // 칸 안의 Q 글자는 장 번호 칸(채운 칸 안의 숫자)과 같아 보여 바탕 없는 선 그림으로 바꿨다
     lecture.querySelectorAll('blockquote').forEach(function (q) {
       var p = q.firstElementChild, st = p && p.tagName === 'P' ? p.firstElementChild : null;
       if (!st || st.tagName !== 'STRONG' || p.firstChild !== st || !/^❓/.test(st.textContent.trim())) return;
@@ -403,7 +413,7 @@
       q.insertBefore(mark, p);
     });
 
-    // 잇는 줄: 섹션 끝의 `> **↓ 이어서**` 인용은 상자로 두지 않고 옅은 구분선 아래 흐린 글자의 잇는 줄(go-line)로 그린다.
+    // 잇는 줄: 장 끝의 `> **↓ 이어서**` 인용은 상자로 두지 않고 옅은 구분선 아래 흐린 글자의 잇는 줄(go-line)로 그린다.
     // 일반 문단은 본문과, 질문 줄은 할 일과 구분되지 않아 사용자가 전용 모양을 골랐다(사용자 결정, 2026-10-26)
     lecture.querySelectorAll('blockquote').forEach(function (q) {
       var p = q.firstElementChild, st = p && p.tagName === 'P' ? p.firstElementChild : null;
@@ -460,8 +470,8 @@
     foldAll.hidden = false;
     syncFoldAll();
     foldAll.addEventListener('click', function () {
-      // 화면에 보이는 맨 위 섹션 제목을 기억했다가, 접거나 편 뒤 그 제목이 같은 자리에 오게 한다.
-      // 긴 섹션 중간을 읽고 있어 화면에 섹션 제목이 없으면, 읽던 섹션의 제목을 화면 맨 위(24px)에 둔다
+      // 화면에 보이는 맨 위 장 제목을 기억했다가, 접거나 편 뒤 그 제목이 같은 자리에 오게 한다.
+      // 긴 장 중간을 읽고 있어 화면에 장 제목이 없으면, 읽던 장의 제목을 화면 맨 위(24px)에 둔다
       var anchor = null, before = 0;
       folds.forEach(function (s) {
         var r = s.querySelector('.sx-h').getBoundingClientRect();
@@ -635,8 +645,8 @@
     pre.appendChild(copy);
   });
 
-  // 오른쪽 목차: 섹션 제목(.sx-h)과 그 아래 한 단계 제목으로 만든다(섹션이 없으면 본문 제목 가운데 가장 큰 단계와 그 아래 한 단계).
-  // 누른 제목이 접힌 섹션 안에 있으면 그 섹션을 먼저 펼친 뒤 이동한다.
+  // 오른쪽 목차: 장 제목(.sx-h)과 그 아래 한 단계 제목으로 만든다(장이 없으면 본문 제목 가운데 가장 큰 단계와 그 아래 한 단계).
+  // 누른 제목이 접힌 장 안에 있으면 그 장을 먼저 펼친 뒤 이동한다.
   var toc = document.querySelector('.toc');
   var heads = [], tocLinks = [];
   if (lecture && toc) {
@@ -689,13 +699,13 @@
       var cur = 0;
       heads.forEach(function (h, i) { if (h.offsetParent !== null && h.getBoundingClientRect().top < 140) cur = i; });
       tocLinks.forEach(function (a, i) { a.classList.toggle('active', i === cur); });
-      // 소제목은 지금 읽는 섹션 것만 펼친다. 섹션마다 소제목을 두면 목차가 화면보다 길어져 지금 위치가 칸 밖으로 숨기 때문이다(UR6)
+      // 절은 지금 읽는 장 것만 펼친다. 장마다 절을 두면 목차가 화면보다 길어져 지금 위치가 칸 밖으로 숨기 때문이다(UR6)
       var g = tocLinks[cur].parentNode.getAttribute('data-group');
       tocLinks.forEach(function (a) {
         var li = a.parentNode;
         if (li.classList.contains('lv2')) li.classList.toggle('open', li.getAttribute('data-group') === g);
       });
-      // 소제목이 많아 목차가 칸보다 길면 칸을 움직여 지금 위치 항목이 칸 안에 보이게 한다(UR6)
+      // 절이 많아 목차가 칸보다 길면 칸을 움직여 지금 위치 항목이 칸 안에 보이게 한다(UR6)
       var box = tocLinks[cur].closest('.toc-inner');
       if (box && box.scrollHeight > box.clientHeight) {
         var br = box.getBoundingClientRect(), ar = tocLinks[cur].getBoundingClientRect();
