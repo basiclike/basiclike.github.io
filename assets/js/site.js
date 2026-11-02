@@ -183,6 +183,15 @@
   // 공지 글(_layouts/notice.html의 .notice-post)은 문서형이라 장 번호 카드와 접기를 만들지 않고, 오른쪽 목차만 만든다(공지 관리 설계 문서 "공지 영역과 문서형 화면")
   var plain = lecture && lecture.closest('.notice-post') ? true : false;
 
+  // 본문의 링크는 모두 새 탭으로 연다. 같은 쪽 안으로 가는 링크(#)는 그대로 둔다(UR25)
+  if (lecture) {
+    lecture.querySelectorAll('a[href]').forEach(function (a) {
+      if (a.getAttribute('href').charAt(0) === '#') return;
+      a.target = '_blank';
+      a.rel = 'noopener';
+    });
+  }
+
   // 본문 첫 '# 제목'이 글 제목과 같으면 지워 제목이 두 번 보이지 않게 한다
   var postTitle = document.querySelector('.post-title');
   if (lecture && postTitle) {
