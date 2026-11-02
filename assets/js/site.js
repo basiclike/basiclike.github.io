@@ -180,6 +180,8 @@
   var article = document.getElementById('article');
   // 강의 글 본문(_layouts/lecture.html의 .post 안). 대주제 화면의 안내 글에는 장과 접기를 만들지 않는다
   var lecture = article && article.closest('.post') ? article : null;
+  // 공지 글(_layouts/notice.html의 .notice-post)은 문서형이라 장 번호 카드와 접기를 만들지 않고, 오른쪽 목차만 만든다(공지 관리 설계 문서 "공지 영역과 문서형 화면")
+  var plain = lecture && lecture.closest('.notice-post') ? true : false;
 
   // 본문 첫 '# 제목'이 글 제목과 같으면 지워 제목이 두 번 보이지 않게 한다
   var postTitle = document.querySelector('.post-title');
@@ -219,8 +221,8 @@
     }, 280);
     if (foldAll) setTimeout(syncFoldAll, 300);
   }
-  if (lecture) {
-    var isHead = function (el) { return /^H[1-4]$/.test(el.tagName); };
+  if (lecture && !plain) {
+    var isHead =function (el) { return /^H[1-4]$/.test(el.tagName); };
     var levels = Array.prototype.filter.call(lecture.children, isHead).map(function (h) { return +h.tagName.charAt(1); });
     var secLv = Math.min.apply(null, levels);
     var styled = lecture.classList.contains('sx');
