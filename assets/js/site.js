@@ -425,10 +425,11 @@
     });
 
     // 잇는 줄: 장 끝의 `> **↓ 이어서**` 인용은 상자로 두지 않고 옅은 구분선 아래 흐린 글자의 잇는 줄(go-line)로 그린다.
-    // 일반 문단은 본문과, 질문 줄은 할 일과 구분되지 않아 사용자가 전용 모양을 골랐다(사용자 결정, 2026-10-26)
+    // 일반 문단은 본문과, 질문 줄은 할 일과 구분되지 않아 사용자가 전용 모양을 골랐다(사용자 결정, 2026-10-26).
+    // 강의 끝의 `> **→ 다음 강의**`, `> **→ 다음 대주제**`도 같은 잇는 줄로 그린다. 정리 상자와 같은 상자라 둘이 구분되지 않았다(사용자 결정, 2026-11-03, 작업 261103-22)
     lecture.querySelectorAll('blockquote').forEach(function (q) {
       var p = q.firstElementChild, st = p && p.tagName === 'P' ? p.firstElementChild : null;
-      if (!st || st.tagName !== 'STRONG' || p.firstChild !== st || !/^↓/.test(st.textContent.trim())) return;
+      if (!st || st.tagName !== 'STRONG' || p.firstChild !== st || !/^[↓→]/.test(st.textContent.trim())) return;
       q.classList.add('go-line');
     });
 
@@ -508,34 +509,35 @@
     w.appendChild(t);
   });
 
-  // 표의 짧은 칸 맞추기: 가장 긴 글(머리 칸 포함)이 SHORT_CELL자 이하인 칸과, LABEL_CELL자 이하이면서 표에서 가장 긴 칸의
-  // 절반 이하인 첫 칸은 그 글이 한 줄에 드는 너비만 쓰고(작업 261028-31),
-  // 나머지 칸은 table-layout: fixed가 남은 너비를 같게 나눈다. 모든 칸이 짧거나 길면 모든 칸을 같게 둔다(작업 261028-09)
-  var SHORT_CELL = 8;
-  var LABEL_CELL = 12;  // 첫 칸(이름표 칸)은 12자까지, 가장 긴 칸의 절반 이하이면 짧은 칸으로 본다. 맞세운 두 칸(공부와 실무)은 같게 남긴다
+  // 표의 짧은 칸 맞추기: 칸의 한 줄 너비(가장 긴 글을 한 줄에 놓은 너비, 머리 칸 포함)가 표 너비의 SHORT_SHARE 이하이고
+  // 표에서 가장 넓은 칸의 한 줄 너비의 절반 이하이면 짧은 칸으로 보고 그 너비만 쓴다(작업 261028-31, 261103-21).
+  // 나머지 칸은 table-layout: fixed가 남은 너비를 같게 나눈다. 모든 칸이 짧거나 길면 모든 칸을 같게 둔다(작업 261028-09).
+  // 글자 수로 가르면 "Anthropic" 9자와 "Claude 앱(claude.ai)" 19자가 경계를 넘어 칸 폭이 어긋났다
+  var SHORT_SHARE = 1 / 3;
   var measure = document.createElement('canvas').getContext('2d');
   function fitTables() {
   document.querySelectorAll('.article table').forEach(function (t) {
+    var tw = t.parentElement.clientWidth;
+    if (!tw) return;
     var auto = t.querySelector('colgroup[data-auto]');
     if (auto) auto.parentNode.removeChild(auto);
     if (!t.rows.length || t.querySelector('colgroup')) return;
-    var n = t.rows[0].cells.length, need = [], short = 0, lens = [], pxs = [];
+    var n = t.rows[0].cells.length, need = [], short = 0, pxs = [];
     for (var c = 0; c < n; c++) {
-      var len = 0, px = 0;
+      var px = 0;
       for (var r = 0; r < t.rows.length; r++) {
         var cell = t.rows[r].cells[c];
         if (!cell) continue;
         var text = cell.textContent.trim(), cs = getComputedStyle(cell);
-        len = Math.max(len, text.length);
         measure.font = cs.fontWeight + ' ' + cs.fontSize + ' ' + cs.fontFamily;
         px = Math.max(px, measure.measureText(text).width + parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight) + 12);
       }
-      lens.push(len); pxs.push(px);
+      pxs.push(px);
     }
-    var longest = Math.max.apply(null, lens);
-    lens.forEach(function (len, c) {
-      var isShort = len <= SHORT_CELL || (c === 0 && len <= LABEL_CELL && len * 2 <= longest);
-      need.push(isShort ? pxs[c] : 0);
+    var longest = Math.max.apply(null, pxs);
+    pxs.forEach(function (px) {
+      var isShort = px <= tw * SHORT_SHARE && px * 2 <= longest;
+      need.push(isShort ? px : 0);
       if (isShort) short++;
     });
     if (short === 0 || short === n) return;
