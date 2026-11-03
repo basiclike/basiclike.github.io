@@ -1,19 +1,19 @@
-/* 화면 테마: 헥사(기본), 문서, 다크. 사이드바 아래의 버튼(.theme-opt)으로 고르고, 고른 값은 이 브라우저에 저장해 유지한다.
-   로그아웃 버튼을 누르면 저장한 테마도 지워 헥사로 돌아간다. 그리기 전에 테마를 붙이는 일은 _layouts/default.html head의 짧은 스크립트가 한다. */
+/* 화면 테마: 헥사(기본), 문서, 클로드. 사이드바 아래의 버튼(.theme-opt)으로 고르고, 고른 값은 이 브라우저에 저장해 유지한다.
+   기본(헥사)을 고르면 저장한 값을 지운다. 로그아웃 버튼을 누르면 저장한 테마도 지워 헥사로 돌아간다. 그리기 전에 테마를 붙이는 일은 _layouts/default.html head의 짧은 스크립트가 한다. */
 (function () {
-  var KEY = 'site-theme', THEMES = ['hex', 'paper', 'dark'], root = document.documentElement;
+  var KEY = 'site-theme', DEFAULT = 'hex', THEMES = ['hex', 'paper', 'claude'], root = document.documentElement;
 
-  function current() { return root.getAttribute('data-theme') || 'hex'; }
+  function current() { return root.getAttribute('data-theme') || DEFAULT; }
   function mark() {
     document.querySelectorAll('.theme-opt').forEach(function (b) {
       b.setAttribute('aria-pressed', String(b.getAttribute('data-theme-value') === current()));
     });
   }
   function apply(t) {
-    if (THEMES.indexOf(t) < 0) t = 'hex';
+    if (THEMES.indexOf(t) < 0) t = DEFAULT;
     root.setAttribute('data-theme', t);
     try { document.dispatchEvent(new Event('site-theme-change')); } catch (e) {}
-    try { if (t === 'hex') localStorage.removeItem(KEY); else localStorage.setItem(KEY, t); } catch (e) {}
+    try { if (t === DEFAULT) localStorage.removeItem(KEY); else localStorage.setItem(KEY, t); } catch (e) {}
     mark();
   }
 
