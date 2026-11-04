@@ -27,6 +27,38 @@
   if (sideOpen) sideOpen.addEventListener('click', function () { setSide(false); if (sideClose) sideClose.focus(); });
   if (root.classList.contains('side-closed')) setSide(true);
 
+  // 공지 목록의 구분 탭: 고른 탭의 구분만 보이고 주소 끝을 #unit-<구분>으로 바꾼다. 주소 끝이 그 꼴이면 그 탭을 연다(공지 설계 "공지 영역과 문서형 화면" (1))
+  document.querySelectorAll('.nt-tablist').forEach(function (list) {
+    var tabs = Array.prototype.slice.call(list.querySelectorAll('.nt-tab'));
+    function pick(id) {
+      tabs.forEach(function (t) {
+        var on = t.getAttribute('aria-controls') === id, pn = document.getElementById(t.getAttribute('aria-controls'));
+        t.setAttribute('aria-selected', on ? 'true' : 'false'); t.tabIndex = on ? 0 : -1;
+        if (pn) pn.hidden = !on;
+      });
+    }
+    list.addEventListener('click', function (e) {
+      var b = e.target.closest('.nt-tab'); if (!b) return;
+      pick(b.getAttribute('aria-controls'));
+      if (history.replaceState) history.replaceState(null, '', '#' + b.getAttribute('aria-controls'));
+    });
+    var h = decodeURIComponent(location.hash.slice(1));
+    if (h && list.querySelector('.nt-tab[aria-controls="' + h + '"]')) pick(h);
+  });
+
+  // 오른쪽 목차 접기(넓은 화면): 왼쪽 목차 접기와 같은 방식으로 접은 상태를 이 브라우저에 기억한다(사이트 설계 "오른쪽 목차 접기").
+  // 그리기 전에 html.toc-closed를 붙이는 일은 _layouts/default.html head의 짧은 스크립트가 한다
+  var tocClose = document.querySelector('.toc-close'), tocOpen = document.querySelector('.toc-open');
+  function setToc(closed) {
+    root.classList.toggle('toc-closed', closed);
+    if (tocClose) tocClose.setAttribute('aria-expanded', closed ? 'false' : 'true');
+    if (tocOpen) tocOpen.setAttribute('aria-expanded', closed ? 'false' : 'true');
+    try { if (closed) localStorage.setItem('site-toc', 'closed'); else localStorage.removeItem('site-toc'); } catch (e) {}
+  }
+  if (tocClose) tocClose.addEventListener('click', function () { setToc(true); if (tocOpen) tocOpen.focus(); });
+  if (tocOpen) tocOpen.addEventListener('click', function () { setToc(false); if (tocClose) tocClose.focus(); });
+  if (root.classList.contains('toc-closed')) setToc(true);
+
   // 강의 목차 접기·펼치기: 지금 대주제는 화살표 버튼, 소주제는 줄 전체가 버튼이다. 다른 대주제의 화살표는 링크라 건드리지 않는다
   document.querySelectorAll('button.tree-toggle, .unit-btn').forEach(function (btn) {
     btn.addEventListener('click', function () {
@@ -201,7 +233,8 @@
 
   // 장: 본문에서 가장 큰 제목 단계의 제목마다, 그 제목부터 다음 같은 단계 제목 앞까지를 section.sx-sec으로 묶는다.
   // 제목은 머리(.sx-head)에 두고 나머지는 접는 상자(.sx-body)에 넣는다. 모두 펼친 상태로 시작하고, 머리 오른쪽 버튼이나 머리를 누르면 하나씩 접고 편다.
-  // 글 front matter에 page_style이 있으면(.sx) 제목 앞에 0부터 번호를 붙이고, 캡처와 ①② 단계를 묶는다(모양은 assets/css/styles/<이름>.css).
+  // 글 front matter에 page_style이 있으면(.sx) `학습 목표` 밖의 장 제목 앞에 1부터 번호를 붙이고, 캡처와 ①② 단계를 묶는다(모양은 assets/css/styles/<이름>.css).
+  // 첫 장 앞의 글(공지의 요약 칸)은 sx-intro로 묶는다(사이트 설계 "장 번호와 항 표시")
   var folds = [];
   var foldAll = document.querySelector('.fold-all');
   function setFold(sec, open) {
@@ -235,14 +268,16 @@
     var levels = Array.prototype.filter.call(lecture.children, isHead).map(function (h) { return +h.tagName.charAt(1); });
     var secLv = Math.min.apply(null, levels);
     var styled = lecture.classList.contains('sx');
-    var sec = null;
+    var sec = null, chapNo = 0, intro = null, tabSeq = 0;
     Array.prototype.slice.call(lecture.children).forEach(function (el) {
       if (isHead(el) && +el.tagName.charAt(1) === secLv) {
         sec = document.createElement('section'); sec.className = 'sx-sec';
         lecture.insertBefore(sec, el);
         el.classList.add('sx-h');
-        if (styled) {
-          var num = document.createElement('span'); num.className = 'sx-num'; num.textContent = folds.length + '.';
+        sec._no = 0;
+        if (styled && !/^\s*학습 목표\s*$/.test(el.textContent)) {
+          chapNo += 1; sec._no = chapNo;
+          var num = document.createElement('span'); num.className = 'sx-num'; num.textContent = chapNo + '.';
           el.insertBefore(document.createTextNode(' '), el.firstChild);
           el.insertBefore(num, el.firstChild);
         }
@@ -263,7 +298,11 @@
         folds.push(sec);
         return;
       }
-      if (sec) sec._body.appendChild(el);
+      if (sec) { sec._body.appendChild(el); return; }
+      if (styled && el.tagName !== 'SCRIPT') {
+        if (!intro) { intro = document.createElement('div'); intro.className = 'sx-intro'; lecture.insertBefore(intro, el); }
+        intro.appendChild(el);
+      }
     });
 
     if (styled) {
@@ -353,13 +392,64 @@
 
       // 장 요약 줄과 절 번호(골든 HTML의 구조만 참고했고, 모양은 사이트의 제목과 회색 글자 그대로다):
       // 장의 첫 문단이 `→ `로 시작하면 장 제목 아래(접어도 보이는 자리)로 옮기고,
-      // 장 안의 h3(절)에 N.M 번호를 붙인다. N은 장 번호(0부터)다. h4(항)에는 번호를 붙이지 않는다
+      // 장 안의 h3(절)에 N.M 번호를 붙인다. N은 장 번호(학습 목표 밖의 장을 1부터)다. h4(항)에는 번호를 붙이지 않는다
       folds.forEach(function (s, i) {
         var first = s._body.firstElementChild;
         if (first && first.tagName === 'P' && /^\s*→\s/.test(first.textContent)) {
           first.className = 'sx-lead';
           s.querySelector('.sx-head-text').appendChild(first);
         }
+        // 단계 묶음: `#### 단계: <제목>`과 그 아래 글(다음 제목 앞까지)을 단계 하나(sx-step)로, 이어지는 단계들을 한 묶음(sx-stepper)으로 묶는다.
+        // 번호는 묶음마다 1부터 사이트가 붙이고, 제목 앞의 "단계:"는 화면에서 뺀다. 항과 더 알아보기보다 먼저 묶어 항으로 세지 않게 한다(사이트 설계 "단계 묶음")
+        // 탭 묶음: `#### 탭: <이름>`과 그 아래 글(다음 `#### 탭:`, `###`, `##`, 탭이나 단계가 아닌 `####` 앞까지)을 탭 하나로, 이어지는 탭을 한 묶음(sx-tabs)으로 묶는다.
+        // 탭 안의 `#### 단계:`는 아래 단계 묶음이 탭 안에서 묶는다. 처음에는 첫 탭이 열려 있다(사이트 설계 "탭 묶음")
+        var tabsBox = null;
+        Array.prototype.slice.call(s._body.children).forEach(function (el) {
+          if (el.tagName !== 'H4' || !/^\s*탭\s*:/.test(el.textContent)) return;
+          if (!tabsBox || tabsBox.nextElementSibling !== el) {
+            tabsBox = document.createElement('div'); tabsBox.className = 'sx-tabs';
+            var list = document.createElement('div'); list.className = 'sx-tablist'; list.setAttribute('role', 'tablist');
+            tabsBox.appendChild(list); el.parentNode.insertBefore(tabsBox, el);
+            list.addEventListener('click', function (e) {
+              var b = e.target.closest('.sx-tab'); if (!b) return;
+              var box = b.closest('.sx-tabs');
+              box.querySelectorAll('.sx-tab').forEach(function (x) { x.setAttribute('aria-selected', x === b ? 'true' : 'false'); x.tabIndex = x === b ? 0 : -1; });
+              box.querySelectorAll(':scope > .sx-tab-panel').forEach(function (pn) { pn.hidden = pn.id !== b.getAttribute('aria-controls'); });
+            });
+          }
+          tabSeq += 1;
+          var id = 'sx-tab-' + tabSeq, first = !tabsBox.querySelector('.sx-tab');
+          var btn = document.createElement('button'); btn.type = 'button'; btn.className = 'sx-tab'; btn.id = id + '-t';
+          btn.setAttribute('role', 'tab'); btn.setAttribute('aria-controls', id); btn.setAttribute('aria-selected', first ? 'true' : 'false'); btn.tabIndex = first ? 0 : -1;
+          btn.textContent = el.textContent.replace(/^\s*탭\s*:\s*/, '').trim();
+          var panel = document.createElement('div'); panel.className = 'sx-tab-panel'; panel.id = id; panel.hidden = !first;
+          panel.setAttribute('role', 'tabpanel'); panel.setAttribute('aria-labelledby', btn.id);
+          tabsBox.firstChild.appendChild(btn); tabsBox.appendChild(panel);
+          var next = el.nextElementSibling; el.remove();
+          while (next && !/^H[1-3]$/.test(next.tagName) && !(next.tagName === 'H4' && !/^\s*단계\s*:/.test(next.textContent))) {
+            var after = next.nextElementSibling; panel.appendChild(next); next = after;
+          }
+        });
+        var stepper = null;
+        Array.prototype.slice.call(s._body.querySelectorAll(':scope > h4, :scope > .sx-tabs > .sx-tab-panel > h4')).forEach(function (el) {
+          if (el.tagName !== 'H4' || !/^\s*단계\s*:/.test(el.textContent)) return;
+          if (!stepper || stepper.nextElementSibling !== el) {
+            stepper = document.createElement('div'); stepper.className = 'sx-stepper';
+            el.parentNode.insertBefore(stepper, el);
+          }
+          var step = document.createElement('div'); step.className = 'sx-step';
+          var n = document.createElement('span'); n.className = 'sx-step-n'; n.setAttribute('aria-hidden', 'true');
+          n.textContent = String(stepper.children.length + 1);
+          var main = document.createElement('div'); main.className = 'sx-step-main';
+          step.appendChild(n); step.appendChild(main); stepper.appendChild(step);
+          var t = el.firstChild;
+          if (t && t.nodeType === 3) t.nodeValue = t.nodeValue.replace(/^\s*단계\s*:\s*/, '');
+          el.classList.add('sx-step-h');
+          var next = el;
+          while (next && !(next !== el && /^H[1-4]$/.test(next.tagName))) {
+            var after = next.nextElementSibling; main.appendChild(next); next = after;
+          }
+        });
         // 더 알아보기: `#### 더 알아보기: …` 제목과 그 아래 글(다음 제목 앞까지)을 번호 없는 작은 참고 글(more-note)로 묶는다.
         // 번호를 단 절으로 두면 본 흐름처럼 읽혀, 참고사항처럼 작게 보이게 해 달라고 사용자가 짚었다(사용자 결정, 2026-10-22)
         Array.prototype.slice.call(s._body.children).forEach(function (el) {
@@ -387,7 +477,7 @@
           if (el.tagName !== 'H3') return;
           m += 1;
           var num = document.createElement('span'); num.className = 'sx-subnum';
-          num.textContent = i + '.' + m;
+          num.textContent = s._no + '.' + m;
           el.insertBefore(document.createTextNode(' '), el.firstChild);
           el.insertBefore(num, el.firstChild);
         });
@@ -430,7 +520,40 @@
     lecture.querySelectorAll('blockquote').forEach(function (q) {
       var p = q.firstElementChild, st = p && p.tagName === 'P' ? p.firstElementChild : null;
       if (!st || st.tagName !== 'STRONG' || p.firstChild !== st || !/^[↓→]/.test(st.textContent.trim())) return;
+      // 장 끝의 `↓ 이어서` 줄은 그리지 않는다. 원고에 남은 줄도 화면에서 뺀다(사용자 직접, 2026-11-04, 작업 261104-12, "줄 전체 빼")
+      if (/^↓/.test(st.textContent.trim())) { q.remove(); return; }
       q.classList.add('go-line');
+    });
+
+    // 안내 상자 종류: 라벨로 상자를 참고, 정보, 팁, 경고로 가르고(co-note, co-info, co-tip, co-warn), 라벨 앞 그림 글자를 co-emoji로 감싸고
+    // 그 종류의 선 아이콘(co-icon)을 넣는다. 원고의 글은 바꾸지 않는다. 세 테마가 같은 모양으로 그린다(lecture.css, 사이트 설계 "세 테마 본문의 같은 구조")
+    var CO_KIND = [[/^💡\s*(사용 환경|용어 정리)/, 'info'], [/^(💡\s*참고|🎬)/, 'note'], [/^(💡|📌|✔)/, 'tip'], [/^⚠/, 'warn']];
+    var CO_ICON = {
+      note: '<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8v.01"/>',
+      info: '<rect x="3.5" y="3.5" width="17" height="17" rx="4"/><path d="M12 11v5M12 8v.01"/>',
+      tip: '<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.9 10.6c.6.5.9 1.3.9 2.1V16h6v-.3c0-.8.3-1.6.9-2.1A6 6 0 0 0 12 3z"/>',
+      warn: '<path d="M10.3 4.2L2.7 17.5A2 2 0 0 0 4.4 20.5h15.2a2 2 0 0 0 1.7-3L13.7 4.2a2 2 0 0 0-3.4 0z"/><path d="M12 10v4M12 17v.01"/>'
+    };
+    lecture.querySelectorAll('blockquote').forEach(function (q) {
+      if (q.classList.contains('q-line') || q.classList.contains('go-line')) return;
+      var p = q.firstElementChild, st = p && p.tagName === 'P' ? p.firstElementChild : null;
+      var label = st && st.tagName === 'STRONG' && p.firstChild === st ? st.textContent.trim() : '';
+      var kind = 'info';
+      for (var k = 0; k < CO_KIND.length; k++) if (CO_KIND[k][0].test(label)) { kind = CO_KIND[k][1]; break; }
+      q.classList.add('co', 'co-' + kind);
+      if (label) {
+        var tn = st.firstChild, em = tn && tn.nodeType === 3 ? tn.nodeValue.match(/^\s*([^\s가-힣A-Za-z0-9]+)\s*/) : null;
+        if (em) {
+          var sp = document.createElement('span'); sp.className = 'co-emoji'; sp.textContent = em[0];
+          tn.nodeValue = tn.nodeValue.slice(em[0].length);
+          st.insertBefore(sp, tn);
+        }
+        st.classList.add('co-label');
+      }
+      var icon = document.createElement('span'); icon.className = 'co-icon'; icon.setAttribute('aria-hidden', 'true');
+      icon.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' + CO_ICON[kind] + '</svg>';
+      // 아이콘은 끝에 붙이고 CSS가 왼쪽 위에 놓는다. 앞에 넣으면 라벨을 고르는 `blockquote > p:first-child` 규칙이 다른 테마에서 깨진다
+      q.appendChild(icon);
     });
 
     // 대화 줄: 원고의 `- **이름:** "말"` 글머리표는 이름 칩과 다음 줄의 큰 글씨 말로 된 대화 줄(say-line)로 바꾼다.
@@ -695,6 +818,7 @@
         var a = document.createElement('a');
         a.href = '#' + encodeURIComponent(h.id);
         a.textContent = h.textContent.trim();
+        a.title = a.textContent;  // 한 줄에서 잘린 항목도 마우스를 올리면 전체 이름을 보인다(UR06)
         a.addEventListener('click', function (e) {
           e.preventDefault();
           var sec = h.closest('.sx-sec');

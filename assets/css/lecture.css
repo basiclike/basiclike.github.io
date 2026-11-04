@@ -9,8 +9,10 @@
 .article ul, .article ol { margin: 0; padding-left: 22px; }
 .article li { line-height: 1.7; margin-bottom: 6px; }
 .article li > :is(ul, ol) { margin-top: 3px; }
-.article a { color: #0150fe; }
-.article a:hover { color: #15958c; }
+.article { --link: var(--text); --link-hover: var(--accent); }
+/* 링크: 세 테마 모두 본문 글자색 굵기 600에 아래 1px 같은 색 선, 마우스를 올리면 강조색이다(사이트 설계 "세 테마 본문의 같은 구조" (3)) */
+.article a { color: var(--link); font-weight: 600; text-decoration: none; border-bottom: 1px solid currentColor; transition: color .15s; }
+.article a:hover { color: var(--link-hover); }
 .article img { max-width: 100%; height: auto; }
 .article figure { margin: 0; }
 .article hr { border: 0; border-top: 1px solid #e6e6e6; margin: 24px 0; }
@@ -33,30 +35,64 @@
 
 /* 절: `### `은 왼쪽 강조색 막대와 강조색 N.M 번호, `#### `은 옅은 막대(site.js가 번호를 붙인다).
    색은 모두 테마 변수라 테마를 바꿔도 사이트 색을 따른다 */
-.article .sx-body > h3 { padding-left: 12px; border-left: 4px solid var(--accent); line-height: 1.4; }
-.article .sx-body > h4 { padding-left: 10px; border-left: 3px solid color-mix(in srgb, var(--accent) 40%, transparent); }
+/* 절 제목은 왼쪽 막대 없이 쓰고 N.M 번호만 강조색이다(사이트 설계 "세 테마 본문의 같은 구조" (4)) */
+.article .sx-body > h3 { line-height: 1.4; }
 /* 항: site.js가 `#### 제목`과 그 아래 글을 hang으로 묶는다. 번호 없이 절 안에 든 묶음이고, 제목은 진한 강조색 바탕에 흰 글씨의 작은 사각 라벨이다(사용자 결정, 2026-11-01, 진한 사각 라벨 E안) */
 .article .sx-body > .hang { margin-top: 1.6em; }
 .article .hang > * + * { margin-top: 1em; }
 .article .hang > h4 + * { margin-top: 10px; }
-.article .hang > h4 { display: inline-block; margin: 0; padding: 2px 10px; border: 0; border-radius: 4px; background: var(--accent); color: #fff; font-size: .8em; font-weight: 700; line-height: 1.6; }
+/* 항 제목: 사각 라벨 없이 앞에 짧은 강조색 막대를 둔 1.06배의 진한 굵은 글자다. 막대가 없으면 굵은 결론 문장과 구분되지 않는다(사이트 설계 "장 번호와 항 표시" (3)) */
+.article .hang > h4 { display: flex; align-items: center; gap: 9px; margin: 0; padding: 0; border: 0; background: none; color: var(--text); font-size: 1.06em; font-weight: 700; line-height: 1.5; }
+.article .hang > h4::before { content: ""; flex: none; width: 3px; height: 1em; border-radius: 2px; background: var(--accent); }
 /* 더 알아보기: site.js가 `#### 더 알아보기`와 그 아래 글을 more-note로 묶는다. 번호, 막대, 상자 없이 작고 흐린 참고 글로 보인다(사용자 결정, 2026-10-22) */
 .article .sx-body > .more-note { margin-top: 1.6em; font-size: .9em; line-height: 1.7; color: var(--muted); }
 .article .more-note > h4.more-h { margin: 0 0 4px; padding: 0; border: 0; font-size: 1em; font-weight: 700; color: var(--muted); }
 .article .more-note > :not(h4) { margin-top: 4px; }
 .article .more-note li { margin-bottom: 2px; line-height: 1.7; }
 .article .more-note :is(td, th) { color: var(--muted); }
-.article .sx-subnum { color: var(--accent); }
+/* 절 번호: 제목보다 작은 흐린 숫자(사이트 설계 "장 번호와 항 표시" (2)) */
+.article .sx-subnum { margin-right: .15em; color: var(--muted); font-size: .72em; font-weight: 600; vertical-align: .12em; font-variant-numeric: tabular-nums; }
 
-/* 강조: 문단과 목록의 굵은 글씨는 아래 형광펜(mark.hl)과 같은 옅은 밑줄로, 목록 표시는 강조색으로.
-   옅은 밑줄과 진한 형광펜 두 가지가 닮아 구분되지 않아, 밑줄 모양을 옅은 밑줄(강조색 16%, 아래 40%) 하나로 합쳤다(사용자 결정, 2026-10-22) */
-.article :is(p, li) > strong { background: linear-gradient(transparent 60%, color-mix(in srgb, var(--accent) 16%, transparent) 60%); }
+/* 단계 묶음: site.js가 `#### 단계: <제목>`과 그 아래 글을 sx-step으로, 이어지는 단계를 sx-stepper로 묶는다.
+   Claude 문서 사이트의 Steps 모양이다. 왼쪽에 28px 원 번호(캡처의 번호 원과 같은 Claude 주황 바탕, 흰 숫자), 번호 아래 다음 단계까지 1px 세로 선, 오른쪽에 굵은 제목과 본문.
+   색은 테마 변수만 써서 세 테마에 같은 모양으로 보인다(사이트 설계 "단계 묶음") */
+.article .sx-stepper { margin-left: 14px; }
+.article .sx-step { position: relative; padding: 0 0 22px 30px; }
+.article .sx-step:last-child { padding-bottom: 0; }
+.article .sx-step:not(:last-child)::before { content: ""; position: absolute; left: 0; top: 34px; bottom: 6px; width: 1px; background: var(--line); }
+.article .sx-step-n { position: absolute; left: -14px; top: 0; display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 50%; background: #d97757; color: #fff; font-size: 12px; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
+.article .sx-step-main { min-width: 0; }
+.article .sx-step-main > h4.sx-step-h { margin: 0; padding: 2px 0 0; border: 0; background: none; font-size: 1em; font-weight: 600; line-height: 1.6; color: var(--text); }
+.article .sx-step-main > * + * { margin-top: 12px; }
+.article .sx-step-main > h4.sx-step-h + * { margin-top: 6px; }
+
+/* 탭 묶음: site.js가 `#### 탭: <이름>`을 sx-tabs로 묶는다. 아래 가는 선 위에 탭 이름을 두고, 고른 탭은 본문 글자색 2px 밑줄이다.
+   code.claude.com/docs/ko/channels의 "지원되는 채널"과 같은 모양이다(사이트 설계 "탭 묶음") */
+.article .sx-tablist { display: flex; gap: 24px; overflow-x: auto; margin: 0 0 18px; border-bottom: 1px solid var(--line); scrollbar-width: none; }
+.article .sx-tab { flex: none; margin: 0 0 -1px; padding: 0 0 10px; border: 0; border-bottom: 2px solid transparent; background: none; font: inherit; font-size: 15px; font-weight: 600; color: var(--muted); cursor: pointer; transition: color .15s, border-color .15s; }
+.article .sx-tab:hover { color: var(--text); }
+.article .sx-tab[aria-selected="true"] { color: var(--text); border-bottom-color: var(--text); }
+.article .sx-tab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.article .sx-tab-panel > * + * { margin-top: 1.2em; }
+.article .sx-tab-panel[hidden] { display: none; }
+
+/* 강조: 굵은 글씨와 형광펜(mark.hl)은 밑줄 바탕 없이 본문 글자색 굵기 600, 목록 표시는 강조색이다(사이트 설계 "세 테마 본문의 같은 구조" (2)) */
+.article :is(p, li) > strong { color: var(--text); font-weight: 600; }
 .article :is(ul, ol) > li::marker { color: var(--accent); }
 
 /* 인용 상자: 원고의 '> **💡 사용 환경**' 같은 안내 상자. 모든 라벨이 사이트 상자 하나의 모양이고, 라벨은 첫 줄에 강조색 글자로 따로 둔다.
    라벨마다 띠 색을 달리한 판은 어수선하다고 사용자가 짚어 단순하게 두었다(2026-10-19). 라벨에는 굵은 글씨 형광펜을 깔지 않는다 */
 .article blockquote { margin: 0; padding: 16px 18px; background: #eef6ff; border: 1px solid #b7dfff; border-radius: 10px; }
 .article blockquote > p:first-child > strong:first-child { display: block; margin-bottom: 8px; color: var(--accent); background: none; }
+/* 상자 종류: site.js가 라벨로 co-note, co-info, co-tip, co-warn을 붙인다. 바탕은 테마 바탕 그대로, 연한 선과 왼쪽 위 선 아이콘, 라벨 글자에만 종류 색을 쓴다.
+   라벨 앞 그림 글자(co-emoji)는 숨긴다. 모서리는 테마의 --co-radius(헥사와 클로드 16px, 문서 6px)다(사이트 설계 "세 테마 본문의 같은 구조" (1), 사용자 직접 2026-11-04 "아주 옅게") */
+.article blockquote.co { --co-line: var(--line); --co-fg: var(--text); position: relative; padding: 14px 18px 14px 46px; border: 1px solid var(--co-line); border-radius: var(--co-radius, 16px); background: var(--bg); color: var(--text); }
+.article blockquote.co-note { --co-line: #dbe6f5; --co-fg: #1e40af; }
+.article blockquote.co-tip { --co-line: #d6efdb; --co-fg: #166534; }
+.article blockquote.co-warn { --co-line: #f3e7b8; --co-fg: #854d0e; }
+.article blockquote.co > .co-icon { position: absolute; top: 17px; left: 18px; display: flex; margin: 0; color: var(--co-fg); }
+.article blockquote.co .co-emoji { display: none; }
+.article blockquote.co > p:first-child > strong.co-label:first-child { margin-bottom: 4px; color: var(--co-fg); font-weight: 600; }
 
 /* 질문 줄: `> **❓ 질문**`은 상자가 아니라 가운데 정렬로, 첫 줄에 말풍선 선 그림, 다음 줄부터 큰 굵은 글씨의 질문으로 보인다(site.js가 q-line을 붙이고 라벨 글자를 선 그림으로 바꾼다).
    질문 너비를 22em으로 좁히고 낱말 단위(keep-all)로 줄 길이를 고르게(balance) 나눠 "소프트웨어 개발자가 되려면 / 가장 먼저 무엇을 해야 할까요?"처럼 두 줄로 보이게 한다(사용자 결정, 2026-10-22). 20em에서는 문서 테마(명조, 한글 약 19px)가 한 문장(한글 21자)을 중간에서 끊어 22em으로 넓혔다. 24em부터는 헥사 테마가 위 첫 질문을 한 줄로 그려 두 줄이 깨지므로, 두 테마 모두 맞는 21.5em~22.5em의 가운데를 쓴다(사용자 지적, 2026-10-30, 작업 261030-15).
@@ -82,19 +118,20 @@
   .article ul.say-list { grid-template-columns: minmax(0, 1fr); row-gap: 0; }
   .article .say-text { margin-bottom: 12px; padding-left: 1em; }
 }
-/* 형광펜: `==문장==`(site.js가 mark.hl로 바꾼다)은 굵은 글씨와 같은 옅은 밑줄(테마 강조색 16%를 아래 40%에)로 깐다(사용자 결정, 2026-10-22) */
-.article mark.hl { padding: 0 2px; background: linear-gradient(transparent 60%, color-mix(in srgb, var(--accent) 16%, transparent) 60%); color: inherit; font-weight: 600; }
+/* 형광펜: `==문장==`(site.js가 mark.hl로 바꾼다)은 굵은 글씨와 같은 진한 글자다 */
+.article mark.hl { padding: 0; background: none; color: var(--text); font-weight: 600; }
 
 /* 표: 칸 테두리와 가로 스크롤 */
 .article .table-wrap { overflow-x: auto; }
 /* 표는 본문 너비에 맞추고 칸 너비를 같게 그린다. 내용 길이로 폭이 정해져 비교 표의 칸이 들쭉날쭉했다(사용자 결정, 2026-10-22) */
 .article table { border-collapse: collapse; width: 100%; table-layout: fixed; }
-.article td, .article th { padding: 6px 12px; line-height: 1.5; border: 1px solid #d8d8d8; vertical-align: top; text-align: left; }
-.article th { background: #ddeeff; font-weight: 700; }
+/* 표는 세로 선과 머리 칸 바탕 없이 가로 선만 둔다(사이트 설계 "세 테마 본문의 같은 구조" (6)) */
+.article td, .article th { padding: 8px 12px 8px 0; font-size: 14px; line-height: 1.55; border: 0; border-bottom: 1px solid var(--line); vertical-align: top; text-align: left; }
+.article th { background: none; font-weight: 600; color: var(--text); }
 
-/* 코드: highlight.js vs2015(어두운 바탕) */
-.article pre { margin: 0; border-radius: 10px; overflow: hidden; }
-.article pre code, .article pre code.hljs { display: block; padding: 20px; font-size: .875em; line-height: 1.75; white-space: pre-wrap; background: #1e1e1e; color: #dcdcdc; font-family: Consolas, "D2Coding", monospace; }
+/* 코드: 흰 바탕에 테마 선 색 1px 선, 14px 글자, 밝은 코드 색(highlight.js github, _layouts/default.html)(사이트 설계 "세 테마 본문의 같은 구조" (5)) */
+.article pre { margin: 0; border: 1px solid var(--line); border-radius: var(--co-radius, 16px); background: #fff; overflow: hidden; }
+.article pre code, .article pre code.hljs { display: block; padding: 16px 18px; font-size: 14px; line-height: 1.7; white-space: pre-wrap; background: #fff; color: #24292e; font-family: Consolas, "D2Coding", monospace; }
 .article :not(pre) > code { color: var(--text); background: #eef0f3; font-size: .875em; padding: 1px 4px; border-radius: 4px; font-family: Consolas, "D2Coding", monospace; }
 
 /* 장 접기: 머리(제목과 접기 버튼)와 접는 상자. 모두 펼친 상태로 시작한다 */
