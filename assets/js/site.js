@@ -35,7 +35,23 @@
         var on = t.getAttribute('aria-controls') === id, pn = document.getElementById(t.getAttribute('aria-controls'));
         t.setAttribute('aria-selected', on ? 'true' : 'false'); t.tabIndex = on ? 0 : -1;
         if (pn) pn.hidden = !on;
+        if (on && pn) openFrame(pn);
       });
+    }
+    // 참고 영상 탭: 탭을 처음 열 때 잠긴 영상 쪽(/notice-videos/)을 iframe에 불러오고, 높이를 그 쪽의 내용 높이에 맞춘다.
+    // 같은 사이트의 쪽이라 내용 높이를 읽을 수 있고, 비밀번호 창에서 영상 줄로 바뀌어도 맞추도록 탭이 열린 동안 잰다(공지 설계 education-notice-page (7))
+    function openFrame(pn) {
+      var f = pn.querySelector('iframe.nt-video-frame');
+      if (!f) return;
+      if (!f.getAttribute('src')) f.setAttribute('src', f.getAttribute('data-src'));
+      if (f._fit) return;
+      f._fit = setInterval(function () {
+        if (pn.hidden) return;
+        try {
+          var d = f.contentDocument, h = d && d.body ? d.body.scrollHeight : 0;
+          if (h && Math.abs(h - f.offsetHeight) > 4) f.style.height = h + 'px';
+        } catch (e) { clearInterval(f._fit); }
+      }, 400);
     }
     list.addEventListener('click', function (e) {
       var b = e.target.closest('.nt-tab'); if (!b) return;
