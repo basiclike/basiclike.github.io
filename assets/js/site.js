@@ -356,7 +356,7 @@
           if (m[1] === '이미지') {
             // 이미지 자리: 프롬프트 글상자와 복사 버튼을 두고, 파일명은 글상자 위에 따로 크게 보인다. 글은 소주제별 프롬프트 파일에 Claude가
             // 쓴 글 그대로다(아래 SX_PROMPTS). 사용자가 그림을 만들 때 프롬프트 파일을 열지 않고 사이트에서 바로 복사해 쓰기 위해서다
-            // (education/02-design/site/index.md "강의 페이지 동작과 모양")
+            // (education/02-design/site.md "강의 페이지 동작과 모양")
             fig._promptId = m[2];
             fig.innerHTML = '<div class="sx-frame sx-has-prompt"><span class="sx-kind">' + m[1] + '</span><span class="sx-id">' + m[2] + '</span><pre class="sx-prompt"></pre><button type="button" class="sx-copy">프롬프트 복사</button></div>';
             var copyBtn = fig.querySelector('.sx-copy');
