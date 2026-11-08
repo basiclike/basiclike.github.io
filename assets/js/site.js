@@ -511,7 +511,7 @@
       lecture.querySelectorAll('.sx-shot').forEach(function (fig) {
         if (!fig._promptId) return;
         var text = window.SX_PROMPTS && window.SX_PROMPTS[fig._promptId];
-        fig.querySelector('.sx-prompt').textContent = text ? text.replace(/\s+$/, '') + (/^저장 위치:/m.test(text) ? '' : '\n' + saveLine(fig._promptId)) : '프롬프트 파일에 없음';
+        fig.querySelector('.sx-prompt').textContent = text ? text.replace(/\s+$/, '') + (/^(\* )?저장 위치:/m.test(text) ? '' : '\n' + saveLine(fig._promptId)) : '프롬프트 파일에 없음';
         if (!text) fig.querySelector('.sx-copy').remove();
       });
     }
