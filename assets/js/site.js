@@ -499,17 +499,24 @@
         });
       });
 
-      var PROMPT_ROOT = 'C:\\Users\\ChoiS\\OneDrive\\WorkClaude\\output\\lecture\\images';  // 받는 폴더가 든 그림 폴더(이 PC). 대주제마다 이 안에 <이름>\\02. image-inbox가 있다
-      // 저장 위치: 사용자가 그림을 넣는 받는 폴더(작업 공간의 images/<이름>/02. image-inbox/)까지 적는다(작업 261028-28). 프롬프트 파일의 글에 이 줄이 있으면 또 붙이지 않는다(작업 261029-69)
+      var PROMPT_ROOT = '';  // 받는 폴더가 든 그림 폴더(이 PC). 대주제마다 이 안에 <이름>\\02-inbox가 있다
+      // 저장 위치: 사용자가 그림을 넣는 받는 폴더(작업 공간의 04-image/<이름>/02-inbox/)까지 적는다(작업 261028-28). 프롬프트 파일의 글에 이 줄이 있으면 또 붙이지 않는다(작업 261029-69)
       var saveLine = function (id) {
         // 대주제 폴더 이름은 `<num 두 자리>-<slug>`다. 레이아웃이 SX_TOPIC_DIR로 넣고, 없으면 주소의 slug를 쓴다
         var slug = window.SX_TOPIC_DIR || (location.pathname.split('/').filter(Boolean)[0] || '');
-        return '저장 위치: ' + PROMPT_ROOT + '\\' + slug + '\\02. image-inbox\\' + id + '.png';
+        return '저장 위치: ' + PROMPT_ROOT + '\\' + slug + '\\02-inbox\\' + id + '.png';
       };
-      // 이미지 자리의 프롬프트 글: 소주제별 프롬프트 파일(images/<이름>/01. image-prompts/)에 Claude가 쓴 글을 그대로 보인다(레이아웃이 SX_PROMPTS로 넣는다).
+      // 이미지 자리의 프롬프트 글: 소주제별 프롬프트 파일(04-image/<이름>/01-prompt/)에 Claude가 쓴 글을 그대로 보인다(레이아웃이 SX_PROMPTS로 넣는다).
       // 글에 저장 위치 줄이 없으면 끝에 붙인다. 파일에 글이 없는 자리는 "프롬프트 파일에 없음"만 보이고 복사 버튼을 두지 않는다(작업 261029-78)
       lecture.querySelectorAll('.sx-shot').forEach(function (fig) {
         if (!fig._promptId) return;
+        // 공개 사이트는 배포 도구가 SX_PROMPTS를 null로 지운다. 그때는 프롬프트 상자와 복사 버튼을 빼고 그림 이름만 둔다(2026-11-15)
+        if (window.SX_PROMPTS === null) {
+          fig.querySelector('.sx-frame').classList.remove('sx-has-prompt');
+          fig.querySelector('.sx-prompt').remove();
+          fig.querySelector('.sx-copy').remove();
+          return;
+        }
         var text = window.SX_PROMPTS && window.SX_PROMPTS[fig._promptId];
         fig.querySelector('.sx-prompt').textContent = text ? text.replace(/\s+$/, '') + (/^(\* )?저장 위치:/m.test(text) ? '' : '\n' + saveLine(fig._promptId)) : '프롬프트 파일에 없음';
         if (!text) fig.querySelector('.sx-copy').remove();
