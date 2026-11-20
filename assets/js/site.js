@@ -499,15 +499,15 @@
         });
       });
 
-      // 저장 위치: 사용자가 그림을 넣는 곳(과정 폴더의 inbox/)을 과정 폴더 기준 `inbox/<N>강-<위치>.png`로 적는다. 강의 제작의 프롬프트 파일과 같은 꼴이다.
-      // 그림 넣는 곳은 과정에 하나여서 넣는 이름에 강의 번호를 남긴다(2026-11-17 사용자가 정함). 이 PC의 경로를 쓰지 않아 공개 사이트에 경로가 나가지 않는다.
+      // 저장 위치: 그림은 강의마다 그 강의 폴더 안에서 관리해(2026-11-18 사용자가 정함) 과정 폴더 기준 `<NN>/image-work/new/<위치>.png`로 적는다.
+      // 이 PC의 경로를 쓰지 않아 공개 사이트에 경로가 나가지 않는다.
       // 프롬프트 파일의 글에 이 줄이 있으면 또 붙이지 않는다(작업 261029-69)
       var saveLine = function (id) {
         // 강의 번호는 레이아웃이 SX_LECTURE로 넣고, 없으면 주소(/<slug>/<강의 번호>/)에서 읽는다
         var no = window.SX_LECTURE || (location.pathname.split('/').filter(Boolean)[1] || '');
-        return '저장 위치: inbox/' + no + '강-' + id + '.png';
+        return '저장 위치: ' + ('0' + no).slice(-2) + '/image-work/new/' + id + '.png';
       };
-      // 이미지 자리의 프롬프트 글: 강의 폴더의 프롬프트 파일(<NN>/prompts/<위치>.md)에 Claude가 쓴 글을 그대로 보인다(레이아웃이 SX_PROMPTS로 넣는다).
+      // 이미지 자리의 프롬프트 글: 강의 폴더의 그림 요청 프롬프트(<NN>/image-work/request-prompts/<위치>.md)에 Claude가 쓴 글을 그대로 보인다(레이아웃이 SX_PROMPTS로 넣는다).
       // 글에 저장 위치 줄이 없으면 끝에 붙인다. 파일에 글이 없는 자리는 "프롬프트 파일에 없음"만 보이고 복사 버튼을 두지 않는다(작업 261029-78)
       lecture.querySelectorAll('.sx-shot').forEach(function (fig) {
         if (!fig._promptId) return;
