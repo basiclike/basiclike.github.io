@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="hex">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script>try{var t=localStorage.getItem('site-theme');if(t==='paper'||t==='claude')document.documentElement.setAttribute('data-theme',t);if(localStorage.getItem('site-side')==='closed')document.documentElement.classList.add('side-closed');if(localStorage.getItem('site-toc')==='closed')document.documentElement.classList.add('toc-closed');}catch(e){}</script>
+  <title>1강. 모듈과 import · BasicLike</title>
+  <meta name="description" content="모듈 파일을 만들고 세 가지 import 꼴로 함수를 불러 쓴다">
+  
+
+  <link rel="icon" href="/assets/img/favicon-32.png" sizes="32x32" type="image/png">
+  <link rel="icon" href="/assets/img/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+  
+  <link rel="stylesheet" href="/assets/css/site.css?v=434a470b">
+  <link rel="stylesheet" href="/assets/css/lecture.css?v=434a470b">
+  <link rel="stylesheet" href="/assets/css/course.css?v=434a470b">
+  <link rel="stylesheet" href="/assets/css/styles/common.css?v=434a470b">
+  <link rel="stylesheet" href="/assets/css/styles/cards.css?v=434a470b">
+  <link rel="stylesheet" href="/assets/css/themes/hex.css?v=434a470b">
+  <link rel="stylesheet" href="/assets/css/themes/paper.css?v=434a470b">
+  <link rel="stylesheet" href="/assets/css/themes/claude.css?v=434a470b">
+</head>
+<body class="post">
+  <a class="skip" href="#content">본문으로 건너뛰기</a>
+  <header class="topbar">
+    <button class="icon-btn menu-btn" type="button" aria-label="메뉴 열기" aria-controls="sidebar" aria-expanded="false">
+      <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    </button>
+    <a class="topbar-brand" href="/"><img class="img-main" src="/assets/img/logo.svg" alt=""><img class="img-ink" src="/assets/img/topics-ink/logo.svg" alt="" loading="lazy"><img class="img-claude" src="/assets/img/topics-claude/logo.svg" alt="" loading="lazy"><span>BasicLike</span></a>
+    <button class="icon-btn search-open" type="button" aria-label="강의 검색" aria-controls="search">
+      <svg viewBox="0 0 24 24" width="21" height="21" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M20 20l-3.5-3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    </button>
+  </header>
+  <aside class="sidebar" id="sidebar" aria-label="사이드바">
+  <div class="side-head">
+    <a class="brand" href="/">
+      <img class="brand-avatar img-main" src="/assets/img/logo.svg" alt=""><img class="brand-avatar img-ink" src="/assets/img/topics-ink/logo.svg" alt="" loading="lazy"><img class="brand-avatar img-claude" src="/assets/img/topics-claude/logo.svg" alt="" loading="lazy">
+      <span class="brand-text">
+        <strong class="brand-name">BasicLike</strong>
+        <span class="brand-desc">Claude와 함께 배우는 개발 강의</span>
+      </span>
+    </a>
+    <button class="side-toggle side-close" type="button" aria-controls="sidebar" aria-expanded="true" aria-label="왼쪽 목차 접기" title="왼쪽 목차 접기"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="15" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M9.5 4.5v15M16 10l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    <button class="side-search search-open" type="button" aria-controls="search">
+      <svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M20 20l-3.5-3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <span>강의 검색</span><kbd>/</kbd>
+    </button>
+  </div>
+  <nav class="side-nav" aria-label="강의 목차">
+    <div class="nav-grid">
+      <a class="nav-cell" href="/" title="홈">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l-2 0l9 -9l9 9l-2 0"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-7"/><path d="M9 21v-6a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v6"/></svg><span>홈</span>
+      </a>
+      <a class="nav-cell" href="/archive/" title="전체 강의 17편">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l11 0"/><path d="M9 12l11 0"/><path d="M9 18l11 0"/><path d="M5 6l0 .01"/><path d="M5 12l0 .01"/><path d="M5 18l0 .01"/></svg><span>전체</span>
+      </a>
+      <a class="nav-cell" href="/notice/" title="공지, 안내 22편">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a3 3 0 0 1 0 6"/><path d="M10 8v11a1 1 0 0 1 -1 1h-1a1 1 0 0 1 -1 -1v-5"/><path d="M12 8h0l4.524 -3.77a.9 .9 0 0 1 1.476 .692v12.156a.9 .9 0 0 1 -1.476 .692l-4.524 -3.77h-8a1 1 0 0 1 -1 -1v-4a1 1 0 0 1 1 -1h8"/></svg><span>공지</span>
+      </a>
+      <a class="nav-cell" href="/styles/" title="모양 보기(비밀번호 필요)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21a9 9 0 0 1 0 -18c4.97 0 9 3.582 9 8c0 1.06 -.474 2.078 -1.318 2.828c-.844 .75 -1.989 1.172 -3.182 1.172h-2.5a2 2 0 0 0 -1 3.75a1.3 1.3 0 0 1 -1 2.25"/><path d="M8.5 10.5m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"/><path d="M12.5 7.5m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"/><path d="M16.5 10.5m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"/></svg><span>모양</span><i class="nav-lock"><svg class="lock-icon" viewBox="0 0 24 24" width="13" height="13" aria-label="비밀번호 필요" role="img"><rect x="5" y="11" width="14" height="9" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></i>
+      </a>
+      <a class="nav-cell" href="https://basiclike.tistory.com/" target="_blank" rel="noopener" title="이전 강의 자료(티스토리), 새 탭">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 6h-6a2 2 0 0 0 -2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-6"/><path d="M11 13l9 -9"/><path d="M15 4h5v5"/></svg><span>이전</span>
+      </a>
+    </div>
+    <p class="nav-label">강의 목차</p>
+    <ul class="tree">
+      <li class="tree-item" style="--c: #4a6fa5">
+        <div class="tree-row">
+          <a class="tree-link" href="/path/" title="1. 개발자로 가는 길"><img class="tree-icon img-main" src="/assets/img/topics/book.svg" alt=""><img class="tree-icon img-ink" src="/assets/img/topics-ink/book.svg" alt="" loading="lazy"><img class="tree-icon img-claude" src="/assets/img/topics-claude/book.svg" alt="" loading="lazy"><span class="tree-name">1. 개발자로 가는 길</span><span class="count">13</span></a>
+          <a class="tree-toggle" href="/path/" tabindex="-1" aria-hidden="true" title="개발자로 가는 길 소주제와 강의 보기"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+        </div>
+      </li>
+      <li class="tree-item open" style="--c: #4a6fa5">
+        <div class="tree-row">
+          <a class="tree-link" href="/test-full-cycle/" title="2. 파이썬 import와 터미널 기초"><img class="tree-icon img-main" src="/assets/img/topics/book.svg" alt=""><img class="tree-icon img-ink" src="/assets/img/topics-ink/book.svg" alt="" loading="lazy"><img class="tree-icon img-claude" src="/assets/img/topics-claude/book.svg" alt="" loading="lazy"><span class="tree-name">2. 파이썬 import와 터미널 기초</span><span class="count">4</span></a>
+          <button class="tree-toggle" type="button" aria-label="파이썬 import와 터미널 기초 접기" aria-expanded="true"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        </div>
+        <ul class="tree-sub">
+          <li class="tree-item unit open">
+            <button class="unit-btn" type="button" aria-expanded="true" title="A. 모듈과 패키지"><span class="unit-code">A</span><span class="unit-name">모듈과 패키지</span><svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+            <ul class="tree-sub lec-list">
+              <li><a class="lec-link current" href="/test-full-cycle/1/" title="1강. 모듈과 import"><span class="lec-code">1강</span><span class="lec-name">모듈과 import</span></a></li>
+              <li><a class="lec-link" href="/test-full-cycle/2/" title="2강. 패키지 import (비밀번호 필요)"><span class="lec-code">2강</span><span class="lec-name">패키지 import</span><svg class="lock-icon" viewBox="0 0 24 24" width="13" height="13" aria-label="비밀번호 필요" role="img"><rect x="5" y="11" width="14" height="9" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></a></li>
+            </ul>
+          </li>
+          <li class="tree-item unit">
+            <button class="unit-btn" type="button" aria-expanded="false" title="B. 콘솔, 터미널, 셸"><span class="unit-code">B</span><span class="unit-name">콘솔, 터미널, 셸</span><svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+            <ul class="tree-sub lec-list">
+              <li><a class="lec-link" href="/test-full-cycle/3/" title="3강. 콘솔과 터미널 (비밀번호 필요)"><span class="lec-code">3강</span><span class="lec-name">콘솔과 터미널</span><svg class="lock-icon" viewBox="0 0 24 24" width="13" height="13" aria-label="비밀번호 필요" role="img"><rect x="5" y="11" width="14" height="9" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></a></li>
+              <li><a class="lec-link" href="/test-full-cycle/4/" title="4강. 셸이 하는 일 (비밀번호 필요)"><span class="lec-code">4강</span><span class="lec-name">셸이 하는 일</span><svg class="lock-icon" viewBox="0 0 24 24" width="13" height="13" aria-label="비밀번호 필요" role="img"><rect x="5" y="11" width="14" height="9" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></a></li>
+            </ul>
+          </li>
+        </ul>
+      </li>
+    </ul>
+  </nav>
+  <div class="side-foot">
+    <div class="theme-pick" role="group" aria-label="화면 테마">
+      <button class="theme-opt" type="button" data-theme-value="hex" aria-pressed="true"><i class="theme-swatch"></i>헥사</button>
+      <button class="theme-opt" type="button" data-theme-value="paper" aria-pressed="false"><i class="theme-swatch"></i>문서</button>
+      <button class="theme-opt" type="button" data-theme-value="claude" aria-pressed="false"><i class="theme-swatch"></i>클로드</button>
+    </div>
+    <button class="logout-btn" type="button" hidden>로그아웃(이 기기에서 비밀번호 지우기)</button>
+  </div>
+</aside>
+
+  <button class="side-toggle side-open" type="button" aria-controls="sidebar" aria-expanded="false" aria-label="왼쪽 목차 펴기" title="왼쪽 목차 펴기"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="15" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M9.5 4.5v15M14 10l2 2-2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+  <div class="overlay" id="overlay"></div>
+  <main class="main" id="content">
+    <div class="progress" aria-hidden="true"><span></span></div>
+<div class="post-wrap">
+  <article class="post" style="--c: #4a6fa5">
+    <header class="post-head" style="--c: #4a6fa5">
+      <nav class="crumbs" aria-label="위치">
+        <a href="/">홈</a>
+        
+        <span class="sep">/</span><a href="/test-full-cycle/">2. 파이썬 import와 터미널 기초</a>
+        <span class="sep">/</span><a href="/test-full-cycle/#unit-a">A. 모듈과 패키지</a>
+        
+      </nav>
+      
+      <h1 class="post-title">1강. 모듈과 import</h1>
+      
+      <p class="post-meta">
+        <span class="meta-badge nature">이론 강의</span>
+        <span class="meta-badge time" title="예상 학습 시간">&#9201; 약 30분</span>
+        <button class="fold-all" type="button" hidden>모두 접기</button>
+      </p>
+    </header>
+    <div id="article" class="article sx style-cards">
+      <h2 id="학습-목표">학습 목표</h2>
+
+<ul>
+  <li>내가 만든 .py 파일을 모듈로 보고 다른 파일에서 불러 보기</li>
+  <li>import, as, from 세 꼴로 같은 함수 불러 보기</li>
+  <li>꼴마다 함수를 부르는 이름 비교해 보기</li>
+</ul>
+
+<blockquote>
+  <p><strong>💡 사용 환경</strong> 파이썬 3이 설치된 PC와 터미널(Windows는 PowerShell, macOS와 Linux는 기본 터미널)을 씁니다. 코드는 메모장이나 VS Code 같은 편집기로 .py 파일에 저장하고, 터미널에서 <code>python 파일이름.py</code>로 실행합니다. macOS와 Linux에서 <code>python</code>이 없다고 나오면 <code>python3</code>으로 바꿔 입력합니다.</p>
+</blockquote>
+
+<h2 id="코드를-묶는-단위">코드를 묶는 단위</h2>
+
+<p>→ 남이 만든 코드는 어떤 단위로 묶여 있을까?</p>
+
+<h3 id="만들어-둔-코드를-가져다-쓰기">만들어 둔 코드를 가져다 쓰기</h3>
+
+<p>두 수를 더하는 함수를 하나 만들었다고 해 봅시다. 처음에는 이 함수를 쓰는 파일이 하나뿐이어서 그 파일 안에 함수를 적어 두면 됩니다. 그런데 프로그램이 커지면 계산하는 파일, 화면에 보여 주는 파일, 결과를 저장하는 파일처럼 파일이 여러 개로 나뉘고, 같은 더하기 함수가 여러 파일에서 필요해집니다.</p>
+
+<p>이때 파일마다 같은 함수를 복사해 붙이면 처음에는 편해 보입니다. 하지만 함수에서 잘못된 곳을 찾아 고치려면 복사해 둔 파일을 모두 찾아 똑같이 고쳐야 하고, 한 곳이라도 빠뜨리면 파일마다 다르게 동작합니다.</p>
+
+<p>그래서 함수는 한 파일에 한 번만 적어 두고, 필요한 파일에서 그 파일을 불러 씁니다. 고칠 일이 생기면 그 한 파일만 고치면 되고, 불러 쓰는 파일은 모두 고친 함수를 씁니다.</p>
+
+<p>[이미지: 1-1-0 — 장면 그림. 같은 더하기 함수를 여러 파일에 복사하던 학생이 함수를 한 파일에 두고 여러 파일에서 불러 쓰는 장면]
+▲ 함수를 한 파일에 두면 여러 파일이 그 함수를 불러 씁니다</p>
+
+<p>이 방법은 내가 만든 코드에만 쓰는 것이 아닙니다. 파이썬을 설치하면 함께 들어오는 코드, 다른 사람이 만들어 인터넷에 올린 코드도 같은 방법으로 불러 씁니다. 여러분이 지금까지 쓴 <code>print()</code>처럼 파이썬에 처음부터 들어 있는 함수 밖의 기능은 대부분 이렇게 불러와서 씁니다.</p>
+
+<p><strong>함수를 다시 쓰지 않고 이미 만든 코드를 ==불러 쓰면==, 한 곳만 고쳐도 그 코드를 쓰는 모든 파일에 반영됩니다.</strong></p>
+
+<h3 id="라이브러리-모듈-패키지">라이브러리, 모듈, 패키지</h3>
+
+<p>남이 만들어 둔 코드를 불러 쓰려면 그 코드가 어떤 단위로 묶여 있는지 알아야 합니다. 이 단위를 부르는 이름이 셋 있습니다.</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>이름</th>
+      <th>뜻</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>라이브러리</td>
+      <td>다른 사람이 만들어 둔 코드를 묶어 둔 것을 두루 부르는 이름</td>
+    </tr>
+    <tr>
+      <td>모듈</td>
+      <td>서로 관련 있는 함수와 변수를 모아 둔 코드의 묶음</td>
+    </tr>
+    <tr>
+      <td>패키지</td>
+      <td>서로 관련 있는 모듈을 모아 둔 묶음</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>세 이름은 모두 ==코드를 정리하는 단위==입니다. 다른 언어에서는 "라이브러리"라는 이름을 많이 쓰지만, 파이썬은 코드를 정리하는 단위를 ==모듈==과 ==패키지==라는 이름으로 나눠 부릅니다. 파이썬 문서와 오류 메시지에도 이 두 이름이 나오므로, 이 과정에서도 두 이름을 씁니다.</p>
+
+<p>이 강의는 모듈을 다룹니다. 모듈을 모은 패키지는 2강에서 다룹니다.</p>
+
+<p><strong>남이 만든 코드는 라이브러리, 모듈, 패키지라는 단위로 묶여 있고, 파이썬에서는 이 단위를 ==모듈==과 ==패키지==로 나눠 부릅니다.</strong></p>
+
+<h2 id="모듈">모듈</h2>
+
+<p>→ 파이썬에서 모듈은 무엇일까?</p>
+
+<h3 id="모듈은-py-파일-하나">모듈은 .py 파일 하나</h3>
+
+<p>모듈이라는 이름이 낯설어도, 여러분은 이미 모듈을 만들어 보았습니다. 파이썬 공식 문서는 모듈을 이렇게 설명합니다.</p>
+
+<blockquote>
+  <p><strong>💡 용어 정리</strong> 모듈은 파이썬의 정의(함수, 변수 등)와 문장을 담은 파일입니다. 파일 이름은 <code>모듈 이름.py</code>이고, 파일 이름에서 <code>.py</code>를 뺀 것이 모듈 이름입니다.</p>
+</blockquote>
+
+<p>여러분이 함수를 적어 저장한 <code>.py</code> 파일 하나가 곧 모듈입니다. 모듈을 위한 특별한 문법이 따로 있지 않습니다. 같은 파일이라도 그 파일을 직접 실행하면 프로그램이고, 다른 파일에서 불러오면 모듈로 쓰입니다.</p>
+
+<p>예를 들어 <code>module3.py</code>라는 파일에 더하기 함수 <code>sum</code>과 변수 <code>message</code>를 적어 두면, 이 파일은 <code>module3</code>이라는 이름의 모듈입니다. 다른 파일은 <code>module3</code>이라는 이름으로 이 파일을 불러와 <code>sum</code>과 <code>message</code>를 씁니다.</p>
+
+<p><strong>파이썬에서 모듈은 함수와 변수를 모아 둔 ==.py 파일 하나==이고, 파일 이름에서 .py를 뺀 것이 모듈 이름입니다.</strong></p>
+
+<h3 id="모듈-파일-만들기">모듈 파일 만들기</h3>
+
+<p>이제 모듈 파일을 직접 만들고, 그 모듈을 불러 쓸 파일을 같은 폴더에 둘 준비를 합니다.</p>
+
+<h4 id="단계-연습할-폴더-만들기">단계: 연습할 폴더 만들기</h4>
+
+<p>터미널을 열고 연습할 폴더를 만든 뒤 그 폴더로 들어갑니다. 이 강의에서 만드는 파일은 모두 이 폴더에 둡니다.</p>
+
+<pre><code class="language-bash">mkdir import_practice
+cd import_practice
+</code></pre>
+
+<h4 id="단계-모듈-파일-저장하기">단계: 모듈 파일 저장하기</h4>
+
+<p>편집기에서 아래 코드를 <code>import_practice</code> 폴더에 <code>module3.py</code>라는 이름으로 저장합니다. 첫 행의 주석은 파일 이름을 알려 주는 것이어서 그대로 두어도 됩니다.</p>
+
+<pre><code class="language-python"># 파일: module3.py
+def sum(a, b):
+    return a + b
+
+
+message = "module3의 변수입니다"
+</code></pre>
+
+<p><code>sum</code>은 두 수 <code>a</code>와 <code>b</code>를 받아 더한 값을 돌려주는 함수이고, <code>message</code>는 글자를 담은 변수입니다. 이 파일은 직접 실행하지 않습니다. 실행해도 함수와 변수를 만들기만 해서 화면에 아무것도 나오지 않습니다.</p>
+
+<h4 id="단계-같은-폴더에-둔다는-것-확인하기">단계: 같은 폴더에 둔다는 것 확인하기</h4>
+
+<p>모듈을 불러 쓸 파일은 <code>module3.py</code>와 같은 폴더에 만듭니다. 파이썬은 <code>import module3</code>을 만나면 먼저 실행한 파일이 있는 폴더에서 <code>module3.py</code>를 찾습니다. 다른 폴더에 둔 파일을 불러오는 방법은 2강에서 다룹니다.</p>
+
+<p>이 강의를 마치면 <code>import_practice</code> 폴더는 아래처럼 됩니다.</p>
+
+<pre><code class="language-text">import_practice/
+├── module3.py
+├── use_import.py
+├── use_as.py
+├── use_from.py
+└── use_plus.py
+</code></pre>
+
+<blockquote>
+  <p><strong>💡 참고</strong> 모듈을 한 번 불러오고 나면 폴더에 <code>__pycache__</code>라는 폴더가 생깁니다. 파이썬이 모듈을 다음에 더 빨리 불러오려고 만들어 두는 것이어서 지우거나 고치지 않아도 됩니다.</p>
+</blockquote>
+
+<p><strong>파이썬에서 모듈은 함수와 변수를 적어 저장한 ==.py 파일 하나==이고, 그 모듈을 불러 쓸 파일은 ==같은 폴더==에 둡니다.</strong></p>
+
+<h2 id="import로-모듈-불러오기">import로 모듈 불러오기</h2>
+
+<p>→ 모듈 안의 함수는 어떻게 부를까?</p>
+
+<h3 id="import-모듈-이름">import 모듈 이름</h3>
+
+<p>모듈을 불러오는 가장 기본 꼴은 <code>import</code> 뒤에 모듈 이름을 적는 것입니다. 모듈 이름에는 <code>.py</code>를 붙이지 않습니다.</p>
+
+<pre><code class="language-text">import 모듈 이름
+</code></pre>
+
+<p>이렇게 불러오면 그 파일 안에서 모듈 이름이 하나 생깁니다. 모듈 안의 함수와 변수는 ==모듈 이름 뒤에 점(.)==을 찍고 그 이름을 적어 부릅니다. "module3 안의 sum"을 <code>module3.sum</code>으로 적는다고 생각하면 됩니다.</p>
+
+<h4 id="단계-import로-불러오는-파일-만들기">단계: import로 불러오는 파일 만들기</h4>
+
+<p><code>import_practice</code> 폴더에 아래 코드를 <code>use_import.py</code>로 저장합니다.</p>
+
+<pre><code class="language-python"># 파일: use_import.py
+import module3
+
+print(module3.sum(1, 2))
+print(module3.message)
+</code></pre>
+
+<p>실행하기 전에 두 <code>print</code>가 무엇을 보여 줄지 먼저 적어 보십시오.</p>
+
+<h4 id="단계-실행해-결과-확인하기">단계: 실행해 결과 확인하기</h4>
+
+<p>터미널에서 실행합니다.</p>
+
+<pre><code class="language-bash">python use_import.py
+</code></pre>
+
+<pre><code class="language-text">3
+module3의 변수입니다
+</code></pre>
+
+<p><code>module3.sum(1, 2)</code>는 <code>module3.py</code>의 <code>sum</code> 함수에 1과 2를 넘겨 3을 돌려받았고, <code>module3.message</code>는 <code>module3.py</code>에 적은 글자를 그대로 가져왔습니다. <code>use_import.py</code>에는 <code>sum</code>이나 <code>message</code>를 만든 코드가 한 줄도 없지만, <code>module3</code> 모듈을 거쳐 둘 다 쓸 수 있습니다.</p>
+
+<p><strong><code>import 모듈 이름</code>으로 불러오면 모듈 안의 함수를 ==<code>모듈 이름.함수 이름</code>==으로 부릅니다.</strong></p>
+
+<h3 id="as로-짧은-이름-붙이기">as로 짧은 이름 붙이기</h3>
+
+<p>모듈 이름이 길면 함수를 부를 때마다 긴 이름을 적어야 합니다. 이때 <code>as</code>로 모듈에 짧은 이름을 붙여 불러옵니다.</p>
+
+<pre><code class="language-text">import 모듈 이름 as 줄인 이름
+</code></pre>
+
+<p><code>import module3 as mod3</code>라고 쓰면, 이 파일에서는 <code>module3</code> 모듈을 <code>mod3</code>라는 이름으로 부릅니다. 모듈은 같고 부르는 이름만 바뀝니다.</p>
+
+<h4 id="단계-as로-불러오는-파일-만들기">단계: as로 불러오는 파일 만들기</h4>
+
+<p>아래 코드를 <code>use_as.py</code>로 저장합니다.</p>
+
+<pre><code class="language-python"># 파일: use_as.py
+import module3 as mod3
+
+print(mod3.sum(1, 2))
+print(mod3.message)
+</code></pre>
+
+<h4 id="단계-실행해-결과-확인하기-1">단계: 실행해 결과 확인하기</h4>
+
+<pre><code class="language-bash">python use_as.py
+</code></pre>
+
+<pre><code class="language-text">3
+module3의 변수입니다
+</code></pre>
+
+<p>결과는 <code>use_import.py</code>와 똑같습니다. 같은 모듈의 같은 함수를 이름만 바꿔 불렀기 때문입니다.</p>
+
+<blockquote>
+  <p><strong>⚠ 주의</strong> <code>as</code>로 이름을 붙이면 이 파일에서는 붙인 이름만 쓸 수 있습니다. <code>import module3 as mod3</code> 다음에 <code>module3.sum(1, 2)</code>라고 쓰면, 이 파일에는 <code>module3</code>이라는 이름이 없어서 <code>NameError</code> 오류가 납니다.</p>
+</blockquote>
+
+<p><strong>모듈 안의 함수는 import로 생긴 모듈의 이름(as를 붙이면 그 이름) 뒤에 점을 찍어 ==<code>모듈 이름.함수 이름</code>==으로 부릅니다.</strong></p>
+
+<h2 id="from으로-함수만-불러오기">from으로 함수만 불러오기</h2>
+
+<p>→ 모듈 이름 없이 함수를 부르려면 어떻게 할까?</p>
+
+<h3 id="from-모듈-import-함수">from 모듈 import 함수</h3>
+
+<p>함수 하나를 여러 번 쓰는데 그때마다 <code>module3.</code>을 앞에 붙이기 번거롭다면, 모듈에서 그 함수만 꺼내 올 수 있습니다.</p>
+
+<pre><code class="language-text">from 모듈 이름 import 함수 이름
+</code></pre>
+
+<p>"module3에서(from) sum을 불러온다(import)"라고 읽습니다. 이렇게 불러오면 이 파일에 <code>sum</code>이라는 이름이 바로 생겨서, 모듈 이름 없이 함수 이름만으로 부릅니다.</p>
+
+<h4 id="단계-from으로-불러오는-파일-만들기">단계: from으로 불러오는 파일 만들기</h4>
+
+<p>아래 코드를 <code>use_from.py</code>로 저장합니다.</p>
+
+<pre><code class="language-python"># 파일: use_from.py
+from module3 import sum
+
+print(sum(1, 2))
+</code></pre>
+
+<h4 id="단계-실행해-결과-확인하기-2">단계: 실행해 결과 확인하기</h4>
+
+<pre><code class="language-bash">python use_from.py
+</code></pre>
+
+<pre><code class="language-text">3
+</code></pre>
+
+<p><code>module3.</code>을 붙이지 않고 <code>sum(1, 2)</code>만 적었는데도 <code>module3.py</code>의 <code>sum</code>이 불렸습니다. 이 꼴로는 적은 함수만 불러오므로, 이 파일에서 <code>message</code>를 쓰려면 <code>from module3 import sum, message</code>처럼 쉼표로 이어 함께 불러와야 합니다.</p>
+
+<blockquote>
+  <p><strong>⚠ 주의</strong> 파이썬에는 리스트 같은 묶음의 합을 구하는 <code>sum</code>이라는 함수가 처음부터 들어 있습니다. <code>from module3 import sum</code>으로 불러오면 이 파일의 <code>sum</code>은 <code>module3</code>의 <code>sum</code>으로 바뀌어, 파이썬에 들어 있던 <code>sum</code>은 가려집니다.</p>
+</blockquote>
+
+<p><strong><code>from 모듈 이름 import 함수 이름</code>으로 불러오면 모듈 이름 없이 ==함수 이름만으로== 부릅니다.</strong></p>
+
+<h3 id="함수에-다른-이름-붙이기">함수에 다른 이름 붙이기</h3>
+
+<p>함수를 꺼내 올 때도 <code>as</code>로 다른 이름을 붙일 수 있습니다. 함수 이름이 이미 쓰는 이름과 겹칠 때 쓰기 좋습니다.</p>
+
+<pre><code class="language-text">from 모듈 이름 import 함수 이름 as 새 이름
+</code></pre>
+
+<p><code>from module3 import sum as plus</code>라고 쓰면 <code>module3</code>의 <code>sum</code>을 이 파일에서는 <code>plus</code>라는 이름으로 부릅니다. <code>sum</code>이라는 이름은 이 파일에 새로 생기지 않으므로, 파이썬에 들어 있던 <code>sum</code>도 그대로 쓸 수 있습니다.</p>
+
+<h4 id="단계-함수에-이름을-붙여-불러오는-파일-만들기">단계: 함수에 이름을 붙여 불러오는 파일 만들기</h4>
+
+<p>아래 코드를 <code>use_plus.py</code>로 저장합니다. 둘째 <code>print</code>의 <code>sum</code>은 <code>module3</code>의 것이 아니라 파이썬에 들어 있는 <code>sum</code>입니다.</p>
+
+<pre><code class="language-python"># 파일: use_plus.py
+from module3 import sum as plus
+
+print(plus(1, 2))
+print(sum([1, 2, 3]))
+</code></pre>
+
+<p>실행하기 전에 둘째 줄의 결과를 먼저 생각해 보십시오. <code>[1, 2, 3]</code>은 세 수를 담은 리스트입니다.</p>
+
+<h4 id="단계-실행해-결과-확인하기-3">단계: 실행해 결과 확인하기</h4>
+
+<pre><code class="language-bash">python use_plus.py
+</code></pre>
+
+<pre><code class="language-text">3
+6
+</code></pre>
+
+<p><code>plus(1, 2)</code>는 <code>module3</code>의 더하기 함수여서 3이 나왔고, <code>sum([1, 2, 3])</code>은 파이썬에 들어 있는 <code>sum</code>이 리스트의 세 수를 더해 6이 나왔습니다. 함수에 다른 이름을 붙였기 때문에 두 <code>sum</code>이 한 파일에서 부딪히지 않았습니다.</p>
+
+<p><strong><code>from 모듈 이름 import 함수 이름 as 새 이름</code>으로 불러오면 그 함수를 ==새 이름==으로 부르고, 원래 이름은 이 파일에 생기지 않습니다.</strong></p>
+
+<h3 id="세-꼴-나란히-보기">세 꼴 나란히 보기</h3>
+
+<p>지금까지 같은 <code>module3.py</code>의 같은 <code>sum</code> 함수를 네 파일에서 불러왔습니다. 불러온 함수는 모두 같고, 달라진 것은 코드에서 그 함수를 ==부르는 이름==뿐입니다.</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>불러오는 코드</th>
+      <th>함수를 부르는 코드</th>
+      <th>이 파일에 생기는 이름</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>import module3</code></td>
+      <td><code>module3.sum(1, 2)</code></td>
+      <td><code>module3</code></td>
+    </tr>
+    <tr>
+      <td><code>import module3 as mod3</code></td>
+      <td><code>mod3.sum(1, 2)</code></td>
+      <td><code>mod3</code></td>
+    </tr>
+    <tr>
+      <td><code>from module3 import sum</code></td>
+      <td><code>sum(1, 2)</code></td>
+      <td><code>sum</code></td>
+    </tr>
+    <tr>
+      <td><code>from module3 import sum as plus</code></td>
+      <td><code>plus(1, 2)</code></td>
+      <td><code>plus</code></td>
+    </tr>
+  </tbody>
+</table>
+
+<p>표를 읽는 방법은 하나입니다. <code>import</code> 뒤(또는 <code>as</code> 뒤)에 적은 이름이 이 파일에 생기고, 그 이름으로 부릅니다.</p>
+
+<ul>
+  <li><code>import</code>로 모듈을 불러오면 모듈의 이름이 생기므로, 함수는 점을 찍어 모듈 이름 뒤에 붙여 부릅니다.</li>
+  <li><code>from ... import</code>로 함수를 불러오면 함수의 이름이 생기므로, 모듈 이름 없이 부릅니다.</li>
+  <li><code>as</code>를 붙이면 원래 이름 대신 <code>as</code> 뒤의 이름이 생깁니다.</li>
+</ul>
+
+<p>어느 꼴을 쓸지는 읽기 쉬운 쪽으로 고릅니다. 모듈의 함수를 여러 개 쓰면 <code>import</code>로 모듈을 불러와 <code>module3.sum</code>처럼 어느 모듈의 함수인지 드러나게 쓰고, 함수 하나만 자주 쓰면 <code>from</code>으로 그 함수만 꺼내 씁니다.</p>
+
+<p><strong>모듈 이름 없이 함수를 부르려면 ==<code>from 모듈 이름 import 함수 이름</code>==으로 함수만 불러오고, 이름이 겹치면 <code>as</code>로 새 이름을 붙여 부릅니다.</strong></p>
+
+<blockquote>
+  <p><strong>📌 정리</strong> 모듈은 함수와 변수를 모아 둔 .py 파일 하나이고, 파일 이름에서 .py를 뺀 것이 모듈 이름입니다. <code>import 모듈</code>로 불러오면 <code>모듈.함수</code>로, <code>import 모듈 as 줄인 이름</code>으로 불러오면 <code>줄인 이름.함수</code>로, <code>from 모듈 import 함수</code>로 불러오면 <code>함수</code>로 부릅니다. import 문에 적은 모듈 이름은 같은 폴더의 .py 파일을 가리킵니다.</p>
+</blockquote>
+
+<blockquote>
+  <p><strong>❓ 질문</strong> <code>from module3 import sum</code> 다음 줄에서 <code>module3.sum(1, 2)</code>라고 쓰면 어떻게 될까요? 이 파일에 어떤 이름이 생겼는지 표에서 찾아보십시오.</p>
+</blockquote>
+
+<blockquote>
+  <p><strong>→ 다음 강의</strong> 모듈 파일이 많아지면 폴더에 나눠 담습니다. 2강에서는 모듈을 담은 폴더인 패키지를 만들고, 폴더 안의 모듈을 점으로 이은 경로로 불러옵니다.</p>
+</blockquote>
+
+    </div>
+    <script>window.SX_PROMPTS = null; window.SX_LECTURE = 1;</script>
+    <nav class="post-nav" aria-label="이전·다음 강의">
+      
+      <a class="post-nav-link next" href="/test-full-cycle/2/"><small>다음 강의 →</small><strong>2강. 패키지 import</strong></a>
+    </nav>
+    
+    <a class="back-list" href="/test-full-cycle/">‹ 파이썬 import와 터미널 기초 강의 목차로</a>
+  </article>
+  <button class="side-toggle toc-open" type="button" aria-controls="toc" aria-expanded="true" aria-label="오른쪽 목차 펴기" title="오른쪽 목차 펴기"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="15" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M14.5 4.5v15M10 10l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+  <aside class="toc" id="toc" aria-label="목차">
+    <div class="toc-inner">
+      <div class="toc-top"><p class="toc-title">목차</p><button class="side-toggle toc-close" type="button" aria-controls="toc" aria-expanded="true" aria-label="오른쪽 목차 접기" title="오른쪽 목차 접기"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="15" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M14.5 4.5v15M8 10l2 2-2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
+      <ol class="toc-list"></ol>
+    </div>
+  </aside>
+</div>
+
+    <footer class="site-footer">
+      <div class="wrap"><div class="foot-inner"><span>© 2026 BasicLike. 강의 자료의 무단 전재와 재배포를 금합니다.</span><span>GitHub Pages로 만든 강의 자료</span></div></div>
+    </footer>
+  </main>
+  <div class="search" id="search" hidden data-src="/search.json">
+  <div class="search-backdrop" data-close></div>
+  <div class="search-box" role="dialog" aria-modal="true" aria-label="글 검색">
+    <div class="search-field">
+      <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M20 20l-3.5-3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <input id="search-input" type="search" placeholder="강의 제목으로 찾기" autocomplete="off" aria-label="검색어">
+      <button class="search-close" type="button" data-close aria-label="검색 닫기"><kbd>Esc</kbd></button>
+    </div>
+    <p class="search-label" id="search-label"></p>
+    <ul class="search-results" id="search-results"></ul>
+    <p class="search-hint" id="search-hint"></p>
+  </div>
+</div>
+
+  <button class="to-top" type="button" aria-label="맨 위로">
+    <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M12 19V5M6 11l6-6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </button>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="/assets/js/theme.js?v=434a470b"></script>
+  <script src="/assets/js/site.js?v=434a470b"></script>
+</body>
+</html>
