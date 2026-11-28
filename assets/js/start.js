@@ -1,0 +1,538 @@
+// 시작 화면(/start/)의 동작. _layouts/start.html이 싣는다. 문구는 #start-data에서, 홈의 주소는 body의 data-home에서 읽는다.
+// 입자, 책장, 뿌리, 나무, 시스템 그림, 입력 칸을 장면의 차례대로 그린다(사이트 배포 설계 "시작 화면을 강의 사이트의 첫 화면으로 두는 방법").
+(function () {
+  'use strict';
+
+  /* ═════════ 시작 화면 설정: 문구는 레이아웃이 넣은 #start-data(lecture/04-deploy/start.yml)에서 읽는다 ═════════ */
+  var START = {};
+  try { START = JSON.parse(document.getElementById('start-data').textContent) || {}; } catch (e) {}
+
+  /* ═════════ 바꿔 쓸 값 ═════════ */
+  var CONFIG = {
+    particles: 62000, particlesSmall: 24000, particlesMax: 130000,
+    items: 130, itemsSmall: 70,             // 흩날리는 자료(쪽)의 수
+    books: 36,                              // 책장 하나의 책(네 칸 × 아홉 권)
+    // 스크롤: 장면마다 hold 화면만큼 머물고, move 화면만큼 다음 장면으로 간다(화면 높이 단위)
+    home: document.body.getAttribute('data-home') || '/',   // 건너뛰거나 마지막에 갈 곳(강의 사이트의 홈). 레이아웃이 사이트 주소로 넣는다
+    hold: 0.3, move: [2.6, 1.6, 1.6, 1.8, 2.6, 1.5], endHold: 0.6,
+    // 저절로 넘기기(처음 온 사람에게만): 머무는 초와 넘어가는 초
+    autoplay: { hold: [3.5, 0.8, 0.5, 0.5, 6, 2.5], move: [10, 5, 5, 6, 8, 4], seenKey: 'landing-seen', always: true },   // always: 열 때마다 저절로 넘긴다. false면 처음 온 사람에게만
+    // 테마마다 바뀌는 입자의 색. colors는 어두운 바탕(dark)의 색이다. solid는 빛을 더하지 않고 덮어 그린다는 표시다(밝은 바탕).
+    // 헥사는 잉크, 보라, 하늘 → 연보라 → 분홍. 문서는 먹색과 청록. 클로드는 검정, 테라코타, 회색
+    themes: {
+      hex: { solid: true, bg: '#ffffff', white: '#1d1933', pale: '#6d4fe0', blue: '#7bdcff', lilac: '#ef7bfc', dim: '#ebe7f5', hot: '#6d4fe0', accent: '#6d4fe0', fruit: '#ef7bfc', leaf1: '#7bdcff', leaf2: '#b49cff', brown: '#4b4766' },
+      paper: { solid: true, bg: '#fbfaf6', white: '#22201c', pale: '#0f6e5f', blue: '#8f897f', lilac: '#55514a', dim: '#e4ded1', hot: '#0f6e5f', accent: '#0f6e5f', fruit: '#b8502a', leaf1: '#0f6e5f', leaf2: '#5fa898', brown: '#55514a' },
+      claude: { solid: true, bg: '#faf9f5', white: '#141413', pale: '#cc785c', blue: '#6c6a64', lilac: '#a9583e', dim: '#e6dfd8', hot: '#cc785c', accent: '#cc785c', fruit: '#cc785c', leaf1: '#6c6a64', leaf2: '#a09d96', brown: '#3d3d3a' }
+    },
+    colors: { bg: '#0a0c14', white: '#eef2ff', blue: '#4f7cff', pale: '#9db8ff', lilac: '#c4b5ff', dim: '#7f8fc4', hot: '#7fa2ff', fruit: '#ff8a5c', accent: '#ff8a5c', leaf1: '#2c9b46', leaf2: '#9ad94a', brown: '#b37c4a' },
+    scenes: (START.scenes || []).map(function (s) { return { name: s.name || '', ko: s.ko || '', title: (s.title || []).join('\n'), body: s.body || '', sr: s.sr || '' }; })
+  };
+  var NS = CONFIG.scenes.length, HOLD = CONFIG.hold, MV = CONFIG.move;
+
+  /* ═════════ 장면(글 없이)과 장면 점 ═════════ */
+  var main = document.getElementById('main'), dotsEl = document.getElementById('dots'), copyEl = document.getElementById('copy'), dotEls = [], copyEls = [], STOPS = [0];
+  CONFIG.scenes.forEach(function (s, k) {
+    var sec = document.createElement('section'); sec.id = 's' + (k + 1); sec.setAttribute('aria-label', '장면 ' + (k + 1));
+    sec.style.height = ((k < NS - 1 ? HOLD + MV[k] : CONFIG.endHold + 1) * 100) + 'vh';
+    var p = document.createElement('p'); p.className = 'sr'; p.textContent = s.sr; sec.appendChild(p); main.appendChild(sec);
+    var d = document.createElement('a'); d.href = '#s' + (k + 1); d.innerHTML = '<small>0' + (k + 1) + '</small>' + s.ko; dotsEl.appendChild(d); dotEls.push(d);
+    if (k < NS - 1) STOPS.push(STOPS[k] + HOLD + MV[k]);
+    // 장면의 글: 번호와 이름, 두 줄 제목(둘째 줄은 강조색), 한 문단, 다음 장면으로 가는 단추
+    var box = document.createElement('div'), lines = s.title.split('\n');
+    box.innerHTML = '<p class="topic"><span>0' + (k + 1) + '</span> ' + s.ko + '</p><h2>' + lines[0] + (lines[1] ? '<br><span>' + lines[1] + '</span>' : '') + '</h2>' + (s.body ? '<p class="lede">' + s.body + '</p>' : '') +
+      (k < NS - 1 ? '<a class="go" href="#s' + (k + 2) + '">' + (k === NS - 2 ? (START.to_ask || 'Claude와 함께하기') : (START.next || '다음 장면')) + ' <b aria-hidden="true">↓</b></a>' : '<a class="go" href="' + CONFIG.home + '" data-leave>' + (START.start || '강의 시작하기') + ' <b aria-hidden="true">→</b></a>');
+    copyEl.appendChild(box); copyEls.push(box);
+  });
+
+  var canvas = document.getElementById('c'), foot = document.getElementById('foot'), debug = /[?&]debug=1/.test(location.search);
+  if (debug) foot.hidden = false;
+  var gl = canvas.getContext('webgl', { antialias: false, alpha: false });
+  if (!gl) return;
+  var still = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var root = document.documentElement, rnd = Math.random;
+  function sstep(a, b, x) { x = Math.max(0, Math.min(1, (x - a) / (b - a))); return x * x * (3 - 2 * x); }
+  function frac(x) { return x - Math.floor(x); }
+  function wrap(v) { return ((v + 0.15) % 1.3 + 1.3) % 1.3 - 0.15; }
+  function gauss() { return rnd() + rnd() + rnd() - 1.5; }
+  function hex3(s) { var n = parseInt(s.slice(1), 16); return [(n >> 16 & 255) / 255, (n >> 8 & 255) / 255, (n & 255) / 255]; }
+  function mulberry(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; var t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+
+  /* ═════════ 그리기: 어두운 바탕에 빛을 더하는 점 ═════════ */
+  // 입자마다 자리(p), 달아오른 정도(h), 강조(g), 진하기(al). 색(cb)과 열매인지(fr)는 따로 넘긴다
+  var VS = 'attribute vec2 p; attribute float h; attribute float g; attribute float al; attribute vec3 cb; attribute float fr;' +
+    'uniform vec2 r; uniform float s; uniform float tb; uniform float ripe; uniform float acc; uniform float leaf; uniform float only; uniform vec3 g1; uniform vec3 g2; uniform vec3 brown; uniform vec3 white; uniform vec3 hot; uniform vec3 fruit; uniform vec3 accent; uniform float late; uniform float mul; varying vec3 vc; varying float va; varying float vo; varying float vk;' +
+    'void main(){ vec2 c = p / r * 2.0 - 1.0; gl_Position = vec4(c.x, -c.y, 0.0, 1.0);' +
+    'float wd = step(0.02, fr) * (1.0 - step(0.08, fr)); float lf = step(0.08, fr) * (1.0 - step(0.25, fr)); float ft = step(0.75, fr);' +
+    'vec3 base = mix(white, cb, tb); base = mix(base, brown * (0.75 + 0.5 * fract(p.x * 0.37 + p.y * 0.23)), wd * leaf); base = mix(base, mix(g1, g2, clamp((fr - 0.1) * 10.0, 0.0, 1.0)), lf * leaf); base = mix(base, accent, step(0.25, fr) * (1.0 - ft) * acc); base = mix(base, mix(fruit, accent, late), ft * ripe); vc = mix(base, hot, smoothstep(0.0, 0.8, h) * (1.0 - 0.7 * wd * leaf));' +
+    'vo = (wd + lf + ft) * leaf; vk = mul * (1.0 + only); if (only > 0.5 && ft < 0.5) gl_Position = vec4(2.0, 2.0, 2.0, 1.0);' +
+    'va = min(1.0, al * min(1.0, 0.75 + h * 0.8 + g * 0.6) * (1.0 + 0.35 * mul)); gl_PointSize = s * (1.18 + h * 1.1 + g * 1.7) * (1.0 + 0.14 * mul); }';
+  var FS = 'precision mediump float; varying vec3 vc; varying float va; varying float vo; varying float vk;' +
+    // vk 0: 어두운 바탕(빛을 더한다, 나무만 덮는다). 1: 밝은 바탕(바탕에 색을 곱해 잉크처럼 스민다). 2: 밝은 바탕의 열매(덮어 그린다)
+    'void main(){ float a = (1.0 - smoothstep(0.12, 0.5, length(gl_PointCoord - vec2(0.5)))) * va;' +
+    'if (vk > 1.5) gl_FragColor = vec4(vc * a, a); else if (vk > 0.5) gl_FragColor = vec4((1.0 - vc) * a, 1.0); else gl_FragColor = vec4(vc * a, a * vo); }';
+  function shader(type, src) { var sh = gl.createShader(type); gl.shaderSource(sh, src); gl.compileShader(sh); return sh; }
+  var prog = gl.createProgram(); gl.attachShader(prog, shader(gl.VERTEX_SHADER, VS)); gl.attachShader(prog, shader(gl.FRAGMENT_SHADER, FS)); gl.linkProgram(prog);
+  var AT = {}; ['p', 'h', 'g', 'al', 'cb', 'fr'].forEach(function (n) { AT[n] = gl.getAttribLocation(prog, n); });
+  var UN = {}; ['r', 's', 'tb', 'ripe', 'acc', 'leaf', 'only', 'g1', 'g2', 'brown', 'white', 'hot', 'fruit', 'accent', 'late', 'mul'].forEach(function (n) { UN[n] = gl.getUniformLocation(prog, n); });
+  var bufData = gl.createBuffer(), bufCol = gl.createBuffer();
+  gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);   // 알파가 0이면 빛을 더하고, 1이면 덮는다
+  var COL = {}, CK = ['dim', 'white', 'pale', 'blue', 'lilac'], ck = null, themeName = 'hex';
+  function setColors(name) {
+    themeName = name === 'dark' || CONFIG.themes[name] ? name : 'hex'; var over = CONFIG.themes[themeName] || {};
+    Object.keys(CONFIG.colors).forEach(function (k) { COL[k] = hex3(over[k] || CONFIG.colors[k]); });
+    document.documentElement.setAttribute('data-theme', themeName);
+    Array.prototype.forEach.call(document.querySelectorAll('.themes button'), function (b) { b.setAttribute('aria-pressed', b.getAttribute('data-t') === themeName ? 'true' : 'false'); });
+    var meta = document.querySelector('meta[name="theme-color"]'); if (meta) meta.setAttribute('content', over.bg || CONFIG.colors.bg);
+  }
+  // 고른 테마: 주소의 ?theme=hexa가 먼저고, 없으면 지난번에 고른 것
+  (function () { var m = /[?&]theme=(\w+)/.exec(location.search), saved = null; try { saved = localStorage.getItem('site-theme'); } catch (e) {} setColors(m ? m[1] : saved || 'hex'); })();
+  // 입자를 지금 테마의 색으로 다시 칠한다(자리는 그대로)
+  function recolor() {
+    if (!ck || !colBuf) return;
+    for (var i = 0; i < N; i++) { var c = COL[CK[ck[i]]]; colBuf[i * 4] = c[0]; colBuf[i * 4 + 1] = c[1]; colBuf[i * 4 + 2] = c[2]; }
+    gl.bindBuffer(gl.ARRAY_BUFFER, bufCol); gl.bufferData(gl.ARRAY_BUFFER, colBuf, gl.STATIC_DRAW);
+  }
+  // 시작 화면을 떠나는 길: 체크해 두면 다음부터는 홈에서 이곳으로 넘기지 않는다. Esc를 눌러도 떠난다
+  (function () {
+    var never = document.getElementById('never'), home = CONFIG.home;
+    document.getElementById('skipLink').setAttribute('href', home);
+    try { never.checked = localStorage.getItem('site-intro') === 'off'; sessionStorage.setItem('site-intro-seen', '1'); } catch (e) {}
+    never.addEventListener('change', function () { try { if (never.checked) localStorage.setItem('site-intro', 'off'); else localStorage.removeItem('site-intro'); } catch (e) {} });
+    window.addEventListener('keydown', function (e) { if (e.key === 'Escape') location.href = home; });
+  })();
+
+  /* ═════════ 자료의 모양(입자가 앉을 자리). 좌표는 자료 하나 안에서 가로 -0.5~0.5, 세로 -0.65~0.65 ═════════ */
+  function lines(x0, x1, y0, y1, n, w, lens) { var out = []; for (var k = 0; k < n; k++) { var L = lens ? lens[k % lens.length] : 1, y = y0 + (y1 - y0) * k / Math.max(1, n - 1); out.push(['line', w / n, x0, y, x0 + (x1 - x0) * L, y]); } return out; }
+  function rect(x0, y0, x1, y1, w) { return ['rect', w, x0, y0, x1, y1]; }
+  var KINDS = [
+    [['line', 0.12, -0.42, -0.5, 0.1, -0.5]].concat(lines(-0.42, 0.42, -0.32, 0.55, 9, 0.88, [1, 0.95, 1, 0.6, 1, 0.9, 1, 0.97, 0.5])),                                   // 문서
+    [['fill', 0.18, -0.46, -0.6, 0.46, -0.47], ['line', 0.04, -0.46, -0.42, 0.46, -0.42], rect(-0.46, -0.36, -0.04, -0.08, 0.12)]
+      .concat(lines(-0.46, -0.04, 0.0, 0.58, 7, 0.3, [1, 0.9, 1, 0.8, 1, 1, 0.6])).concat(lines(0.04, 0.46, -0.36, 0.58, 11, 0.36, [1, 0.85, 1, 1, 0.7, 1, 0.9, 1, 1, 0.8, 0.5])),   // 신문
+    [rect(-0.5, -0.42, 0.5, 0.42, 0.22), ['line', 0.06, -0.5, -0.28, 0.5, -0.28], ['disc', 0.03, -0.44, -0.35, 0.025], ['disc', 0.03, -0.37, -0.35, 0.025], ['disc', 0.03, -0.3, -0.35, 0.025],
+      rect(-0.2, -0.38, 0.42, -0.32, 0.08), ['fill', 0.2, -0.42, -0.2, -0.02, 0.1]].concat(lines(0.06, 0.42, -0.18, 0.08, 4, 0.12, [1, 0.8, 1, 0.6])).concat(lines(-0.42, 0.42, 0.18, 0.34, 3, 0.1, [1, 0.9, 0.5])),   // 웹 브라우저 창
+    [['poly', 0.4, [[-0.34, -0.56], [0.14, -0.56], [0.34, -0.36], [0.34, 0.56], [-0.34, 0.56]], true], ['poly', 0.12, [[0.14, -0.56], [0.14, -0.36], [0.34, -0.36]], false]].concat(lines(-0.2, 0.2, -0.1, 0.36, 4, 0.48, [1, 0.8, 1, 0.6])),   // 문서 아이콘
+    [rect(-0.48, -0.5, 0.48, 0.5, 0.3), ['tri', 0.34, [-0.46, 0.48], [-0.12, -0.1], [0.22, 0.48]], ['tri', 0.18, [0.04, 0.48], [0.26, 0.08], [0.46, 0.48]], ['disc', 0.12, 0.24, -0.26, 0.09]],   // 사진
+    [rect(-0.5, -0.36, 0.5, 0.3, 0.36), ['tri', 0.34, [-0.1, -0.16], [-0.1, 0.12], [0.14, -0.02]], ['line', 0.2, -0.46, 0.44, 0.46, 0.44], ['disc', 0.06, -0.1, 0.44, 0.04]],   // 영상
+    [['wave', 1]],                                                                                                                                                             // 음성
+    [['poly', 0.22, [[-0.44, -0.5], [-0.44, 0.48], [0.46, 0.48]], false], ['fill', 0.12, -0.34, 0.1, -0.2, 0.46], ['fill', 0.14, -0.14, -0.12, 0, 0.46], ['fill', 0.16, 0.06, -0.36, 0.2, 0.46], ['fill', 0.14, 0.26, -0.2, 0.4, 0.46]],   // 그래프
+    [['grid', 1, -0.46, -0.5, 0.46, 0.5, 4, 6]],                                                                                                                               // 표
+    [rect(-0.5, -0.3, 0.5, 0.36, 0.5), ['poly', 0.5, [[-0.5, -0.3], [0, 0.08], [0.5, -0.3]], false]],                                                                         // 메일
+    [['ring', 0.6, 0, -0.08, 0.42], ['poly', 0.16, [[-0.18, 0.28], [-0.34, 0.56], [0.04, 0.32]], false], ['disc', 0.08, -0.18, -0.08, 0.05], ['disc', 0.08, 0, -0.08, 0.05], ['disc', 0.08, 0.18, -0.08, 0.05]],   // 대화
+    [['poly', 0.4, [[-0.12, -0.42], [-0.46, -0.42], [-0.24, 0], [-0.46, 0.42], [-0.12, 0.42]], false], ['line', 0.14, 0.02, -0.18, 0.38, -0.18], ['line', 0.18, -0.02, 0, 0.46, 0], ['line', 0.14, 0.06, 0.18, 0.32, 0.18]],   // 수식
+    [['code', 1]],                                                                                                                                                             // 코드
+    [['squiggle', 1]],                                                                                                                                                         // 그림
+    [['ring', 0.34, -0.22, -0.26, 0.2], ['poly', 0.33, [[0.24, -0.46], [0.46, -0.06], [0.02, -0.06]], true], rect(-0.18, 0.12, 0.18, 0.48, 0.33)],                             // 도형
+    [['poly', 0.8, [[-0.48, -0.36], [-0.14, -0.36], [-0.04, -0.24], [0.48, -0.24], [0.48, 0.4], [-0.48, 0.4]], true], ['line', 0.2, -0.48, -0.14, 0.48, -0.14]]               // 폴더
+  ];
+  // 쪽: 테두리와 글줄(참고 화면의 흩날리는 쪽)
+  KINDS.push([rect(-0.44, -0.62, 0.44, 0.62, 0.34)].concat(lines(-0.3, 0.3, -0.46, 0.46, 9, 0.66, [1, 0.8, 1, 0.6, 0.9, 1, 0.7, 1, 0.5])));
+  KINDS.push([rect(-0.44, -0.62, 0.44, 0.62, 0.34)].concat(lines(-0.3, 0.1, -0.46, 0.46, 7, 0.4, [1, 0.7, 1, 0.5, 0.9, 0.6, 1])).concat(lines(0.16, 0.32, -0.46, 0.46, 7, 0.26, [1, 0.5, 1, 1, 0.4, 1, 0.7])));
+  var FLOOD_KINDS = [16, 17, 16, 17, 16, 0, 1, 12, 8, 3];      // 쪽이 대부분이고, 문서, 신문, 코드, 표, 문서 아이콘이 섞인다
+  var CODE_ROWS = [[0, 0.5], [1, 0.62], [2, 0.44], [2, 0.3], [1, 0.66], [2, 0.5], [3, 0.28], [1, 0.4], [0, 0.2]];
+  var pt = [0, 0];
+  function onPoly(P, closed, u) {
+    var sg = [], tot = 0, n = P.length, m = closed ? n : n - 1, k;
+    for (k = 0; k < m; k++) { var a = P[k], b = P[(k + 1) % n], L = Math.hypot(b[0] - a[0], b[1] - a[1]); sg.push(L); tot += L; }
+    var t = u * tot; for (k = 0; k < m; k++) { if (t <= sg[k] || k === m - 1) { var a2 = P[k], b2 = P[(k + 1) % n], f = sg[k] ? Math.min(1, t / sg[k]) : 0; pt[0] = a2[0] + (b2[0] - a2[0]) * f; pt[1] = a2[1] + (b2[1] - a2[1]) * f; return; } t -= sg[k]; }
+  }
+  function samplePart(q) {
+    var j = (rnd() - 0.5) * 0.014, u = rnd(), v = rnd();
+    switch (q[0]) {
+      case 'line': pt[0] = q[2] + (q[4] - q[2]) * u; pt[1] = q[3] + (q[5] - q[3]) * u + j; break;
+      case 'rect': onPoly([[q[2], q[3]], [q[4], q[3]], [q[4], q[5]], [q[2], q[5]]], true, u); pt[0] += j; break;
+      case 'fill': pt[0] = q[2] + (q[4] - q[2]) * u; pt[1] = q[3] + (q[5] - q[3]) * v; break;
+      case 'poly': onPoly(q[2], q[3], u); pt[0] += j; pt[1] += j; break;
+      case 'disc': var rr = q[4] * Math.sqrt(u), a = v * 6.2832; pt[0] = q[2] + Math.cos(a) * rr; pt[1] = q[3] + Math.sin(a) * rr; break;
+      case 'ring': var a2 = u * 6.2832; pt[0] = q[2] + Math.cos(a2) * q[4] + j; pt[1] = q[3] + Math.sin(a2) * q[4] * 0.86 + j; break;
+      case 'tri': if (u + v > 1) { u = 1 - u; v = 1 - v; } pt[0] = q[2][0] + (q[3][0] - q[2][0]) * u + (q[4][0] - q[2][0]) * v; pt[1] = q[2][1] + (q[3][1] - q[2][1]) * u + (q[4][1] - q[2][1]) * v; break;
+      case 'wave': var bar = (u * 15) | 0, hh = 0.08 + 0.5 * Math.abs(Math.sin(bar * 1.7) * Math.cos(bar * 0.6)); pt[0] = -0.46 + bar * 0.066 + j; pt[1] = (v - 0.5) * 2 * hh; break;
+      case 'grid': var cols = q[6], rows = q[7]; if (u < 0.5) { pt[0] = q[2] + (q[4] - q[2]) * ((v * (cols + 1)) | 0) / cols + j; pt[1] = q[3] + (q[5] - q[3]) * rnd(); } else { pt[1] = q[3] + (q[5] - q[3]) * ((v * (rows + 1)) | 0) / rows + j; pt[0] = q[2] + (q[4] - q[2]) * rnd(); } break;
+      case 'code': var row = (u * CODE_ROWS.length) | 0, cr = CODE_ROWS[row]; pt[0] = -0.44 + cr[0] * 0.12 + v * cr[1]; pt[1] = -0.52 + row * 0.13 + j; break;
+      case 'squiggle': pt[0] = -0.44 + 0.88 * u + j; pt[1] = 0.32 * Math.sin(u * 9.5) * (1 - u * 0.4) + 0.08 * Math.sin(u * 23) + j; break;
+    }
+  }
+  function sampleKind(kind) { var parts = KINDS[kind], tot = 0, k; for (k = 0; k < parts.length; k++) tot += parts[k][1]; var pick = rnd() * tot; for (k = 0; k < parts.length; k++) { pick -= parts[k][1]; if (pick <= 0 || k === parts.length - 1) { samplePart(parts[k]); return; } } }
+
+  /* ═════════ 세계: 나무 한 그루. 책장은 뿌리를 따라 놓여 있고, 뿌리가 모인 자리에서 줄기와 가지가 자란다 ═════════
+     세계 좌표의 단위는 줄기의 길이(1)다. 뿌리가 모이는 밑동이 (0, 0)이고, 위쪽(줄기와 가지)이 -y, 아래쪽(뿌리)이 +y다. 책장 하나의 폭은 SW다 */
+  var SW = 0.11, SH = 0.088, NB = CONFIG.books;
+  var segs = [], tips = [], sites = [], home = null, slots = [], boxAll = {}, boxRoot = {};
+  function bz(s, u, o) { var m = 1 - u; o[0] = m * m * s.x1 + 2 * m * u * s.cx + u * u * s.x2; o[1] = m * m * s.y1 + 2 * m * u * s.cy + u * u * s.y2; }
+  function thick(d) { return [0.36, 0.15, 0.08, 0.045, 0.024, 0.013][d]; }
+  function buildWorld() {
+    var tr = mulberry(21), k, o = [0, 0]; segs = []; tips = []; sites = [];
+    function add(x1, y1, x2, y2, d, isRoot, st, en) { segs.push({ x1: x1, y1: y1, x2: x2, y2: y2, d: d, len: Math.hypot(x2 - x1, y2 - y1), root: isRoot, st: st, en: en, g: isRoot ? 1 : 0, tx: x1, ty: y1 }); }
+    // 줄기와 가지: 자라기 시작하는 때(st)와 다 자라는 때(en)가 있다. 아래에서 위로 차례로 이어진다
+    add(0, 0, 0, -1, 0, false, 0, 0.24);
+    function crown(x1, y1, ang, len, depth, st) {
+      var en = st + (depth === 1 ? 0.18 : 0.13), x2 = x1 + Math.cos(ang) * len, y2 = y1 + Math.sin(ang) * len; add(x1, y1, x2, y2, depth, false, st, en);
+      if (depth >= 5) { tips.push([x2, y2]); return; }
+      var n = tr() < 0.5 ? 3 : 2, spread = 0.3 + depth * 0.055;
+      for (var c = 0; c < n; c++) { var a2 = ang + (c - (n - 1) / 2) * spread * 1.4 + (tr() - 0.5) * 0.25; a2 += (-Math.PI / 2 - a2) * 0.1; crown(x2, y2, a2, len * (0.68 + tr() * 0.1), depth + 1, en - 0.02); }
+    }
+    for (k = 0; k < 5; k++) crown(0, -1, -Math.PI / 2 + (k - 2) / 2 * 1.0 + (tr() - 0.5) * 0.08, 1.05 + tr() * 0.15, 1, 0.2);   // 큰 가지 다섯이 고르게 퍼진다
+    // 뿌리: 밑동에서 아래로 넓게 퍼지며 갈라진다
+    function rootG(x1, y1, ang, len, depth) {
+      var x2 = x1 + Math.cos(ang) * len, y2 = y1 + Math.sin(ang) * len; add(x1, y1, x2, y2, depth, true, 0, 0);
+      if (depth >= 4) return;
+      var n = tr() < 0.45 ? 3 : 2, spread = 0.36 + depth * 0.05;
+      for (var c = 0; c < n; c++) { var a2 = ang + (c - (n - 1) / 2) * spread * 1.4 + (tr() - 0.5) * 0.25; a2 += (Math.PI / 2 - a2) * 0.08; rootG(x2, y2, a2, len * (0.7 + tr() * 0.1), depth + 1); }
+    }
+    for (k = 0; k < 6; k++) rootG(0, 0, Math.PI / 2 + (k - 2.5) / 2.5 * 1.15, 0.8 + tr() * 0.1, 1);   // 뿌리 여섯이 고르게 퍼진다. 나무보다 조금 작다
+    var ax0 = 1e9, ax1 = -1e9, ay0 = 0, ay1 = 0, rx0 = 1e9, rx1 = -1e9;
+    segs.forEach(function (s) {
+      var nx = -(s.y2 - s.y1) / s.len, ny = (s.x2 - s.x1) / s.len, bend = s.d === 0 ? 0 : (tr() - 0.5) * 0.4 * s.len; s.cx = (s.x1 + s.x2) / 2 + nx * bend; s.cy = (s.y1 + s.y2) / 2 + ny * bend; s.nx = nx; s.ny = ny;
+      ax0 = Math.min(ax0, s.x2); ax1 = Math.max(ax1, s.x2); ay0 = Math.min(ay0, s.y2); ay1 = Math.max(ay1, s.y2);
+      // 책장의 자리: 뿌리를 따라 촘촘히, 뿌리의 양쪽에 번갈아 놓는다
+      if (s.root) { rx0 = Math.min(rx0, s.x2); rx1 = Math.max(rx1, s.x2); var cnt = Math.max(1, Math.round(s.len / 0.125)); for (var j = 0; j < cnt; j++) { bz(s, (j + 0.5) / cnt, o); var sd = j % 2 ? 1 : -1, px0 = o[0] + nx * sd * SH * 0.7, py0 = o[1] + ny * sd * SH * 0.7, clash = false;
+        for (var q = 0; q < sites.length; q++) if (Math.abs(sites[q].x - px0) < SW * 1.05 && Math.abs(sites[q].y - py0) < SH * 1.08) { clash = true; break; }   // 책장끼리 겹치지 않게 한다
+        if (!clash) { var hair = [], tgx = (s.x2 - s.x1) / s.len, tgy = (s.y2 - s.y1) / s.len, hn = 3 + ((tr() * 3) | 0);
+          for (var hq = 0; hq < hn; hq++) { var mix = (tr() - 0.3) * 1.6, hx = nx * sd + tgx * mix, hy = ny * sd + tgy * mix + 0.45, hl = Math.hypot(hx, hy) || 1; hair.push({ dx: hx / hl, dy: hy / hl, L: (0.07 + tr() * 0.13) * (1.25 - s.d * 0.1), cv: (tr() - 0.5) * 0.9, at: (tr() - 0.5) * 0.11 }); }
+          sites.push({ x: px0, y: py0, d: s.d, ax: o[0] - px0, ay: o[1] - py0, tgx: tgx, tgy: tgy, hair: hair }); } } }
+    });
+    boxAll = { cx: (ax0 + ax1) / 2, cy: (ay0 + ay1) / 2, w: ax1 - ax0 + 0.5, h: ay1 - ay0 + 0.5 };
+    boxRoot = { cx: (rx0 + rx1) / 2, cy: ay1 / 2 - 0.25, w: rx1 - rx0 + 0.4, h: ay1 + 0.9 };
+    // 처음 채우는 책장: 굵은 뿌리(둘째 마디)의 가운데쯤에 있는 책장
+    var mid = sites.filter(function (t) { return t.d === 2; }); home = mid[Math.floor(mid.length * 0.45)];
+    var tot = 0; sites.forEach(function (t) { t.dist = Math.hypot(t.x - home.x, t.y - home.y); t.wt = 1 / (1 + Math.pow(t.dist / 0.32, 4)) + 0.02; tot += t.wt; t.acc = tot; }); sites.tot = tot;   // 가까운 책장은 책장의 모양이 보일 만큼 입자가 많고, 먼 책장은 점으로 보일 만큼만 받는다
+    // 책장 안의 책 자리(책장 가운데가 원점): 네 칸, 칸마다 아홉 권
+    var br = mulberry(17), cols = NB / 4, rowH = SH / 4; slots = [];
+    for (var b = 0; b < NB; b++) { var r = Math.floor(b / cols), c2 = b % cols, cw = SW * 0.9 / cols; slots.push({ x: -SW / 2 + SW * 0.05 + c2 * cw + cw * 0.1, w: cw * 0.8, yb: -SH / 2 + rowH * (r + 1) - rowH * 0.07, h: rowH * (0.62 + br() * 0.26) }); }
+  }
+
+  /* ═════════ 입자 ═════════
+     역할(i % 20): 0~9 책 입자, 10~11 책장의 틀, 12~15 뿌리와 줄기와 가지, 16~18 잎과 열매, 19 먼지.
+     책과 틀의 입자는 처음에 모두 첫 책장에 있다가, 눈이 멀어지면 제 책장으로 옮겨 간다(책장 안의 제 자리는 그대로다). */
+  var N, S, budget = 1, gain = 1, data, vel, seed, colBuf, role, Q, itemOf, bookOf, haze, shLocal, shPose, tFlood, siteX, siteY, siteD, lx, ly, wx, wy, wSeg, wU, tCode, tBox, tDl, rtx, rty, sx2, sy2;
+  var items = [], W = 0, H = 0, dpr = 1, narrow = false, time = 0, ripe = 0, accV = 0, leafV = 0, lateV = 0, mouse = { x: -9999, y: -9999, on: false }, mouseS = { x: -9999, y: -9999 }, mov = 0, scPrev = 0, mAmt = 0;
+  function alloc() {
+    var small = Math.min(innerWidth, innerHeight) < 600;
+    var area = innerWidth * innerHeight, want = small ? CONFIG.particlesSmall : Math.max(CONFIG.particles, Math.min(CONFIG.particlesMax, CONFIG.particles * area / 726000));   // 창이 넓으면 입자를 늘린다(1100×660에서 62,000개가 기준)
+    N = Math.round(want * budget); gain = small ? 1 : Math.max(1, Math.min(1.8, Math.sqrt(CONFIG.particles * area / 726000 / N))); S = Math.round((small ? CONFIG.itemsSmall : CONFIG.items) * Math.sqrt(budget));   // gain: 모자란 만큼은 입자를 키워 메운다
+    data = new Float32Array(N * 5); vel = new Float32Array(N * 2); seed = new Float32Array(N); colBuf = new Float32Array(N * 4);
+    role = new Uint8Array(N); Q = new Float32Array(N * 4); itemOf = new Int32Array(N); bookOf = new Int32Array(N); haze = new Uint8Array(N); ck = new Uint8Array(N);
+    shLocal = new Float32Array(N * 2); shPose = new Float32Array(S * 8); tFlood = new Float32Array(N * 2);
+    siteX = new Float32Array(N); siteY = new Float32Array(N); siteD = new Float32Array(N); lx = new Float32Array(N); ly = new Float32Array(N); wx = new Float32Array(N); wy = new Float32Array(N); wSeg = new Int32Array(N); wU = new Float32Array(N); tCode = new Float32Array(N * 2); tBox = new Float32Array(N * 2); tDl = new Float32Array(N); rtx = new Float32Array(N); rty = new Float32Array(N); sx2 = new Float32Array(N); sy2 = new Float32Array(N);
+    for (var i = 0; i < N; i++) { var m = i % 20; role[i] = m < 10 ? 0 : m < 12 ? 1 : m < 16 ? 2 : m < 19 ? 3 : 4; for (var j = 0; j < 4; j++) Q[i * 4 + j] = rnd(); seed[i] = rnd() * 6.2832; }
+  }
+  // 잔뿌리 위의 한 점(책장 가운데에서 잰 자리). 뿌리에 가까울수록 빽빽하고, 끝으로 갈수록 가늘다
+  function rootlet(i, st) {
+    // 가닥 하나를 고르고, 절반은 그 가닥에서 다시 갈라진 더 가는 실뿌리에 둔다. 입자가 많은 책장일수록 가닥이 길다
+    var hr = st.hair[(rnd() * st.hair.length) | 0], L = hr.L * (1 + 1.3 * st.wt), u = Math.pow(rnd(), 1.5), jt = gauss() * (0.003 + 0.008 * st.wt) * (1 - u * 0.75), wv = hr.cv * u * u * L + jt;
+    var x = hr.dx * u * L - hr.dy * wv, y = hr.dy * u * L + hr.dx * wv;
+    if (rnd() < 0.5) { var sgn = ((i * 7 + ((u * 5) | 0)) % 2 ? 1 : -1), an = sgn * (0.55 + 0.35 * ((i % 5) / 5)), ca = Math.cos(an), sa = Math.sin(an), v = Math.pow(rnd(), 1.3) * L * 0.45 * (1 - u * 0.5); u = Math.round(u * 5) / 5; x = hr.dx * u * L - hr.dy * hr.cv * u * u * L + (hr.dx * ca - hr.dy * sa) * v + gauss() * 0.002; y = hr.dy * u * L + hr.dx * hr.cv * u * u * L + (hr.dx * sa + hr.dy * ca) * v + gauss() * 0.002; }
+    rtx[i] = st.ax + st.tgx * hr.at + x; rty[i] = st.ay + st.tgy * hr.at + y;
+  }
+  function pickSite() { var pk = rnd() * sites.tot, lo = 0, hi = sites.length - 1; while (lo < hi) { var mid = (lo + hi) >> 1; if (sites[mid].acc < pk) lo = mid + 1; else hi = mid; } return sites[lo]; }
+
+  function layout() {
+    dpr = Math.min(window.devicePixelRatio || 1, 2); narrow = innerWidth <= 800;
+    W = canvas.width = Math.floor(innerWidth * dpr); H = canvas.height = Math.floor(innerHeight * dpr); gl.viewport(0, 0, W, H);
+    var i, k, br = mulberry(5), o2 = [0, 0];
+    items = []; for (k = 0; k < S; k++) items.push({ kind: FLOOD_KINDS[k % FLOOD_KINDS.length], x: br() * 1.3 - 0.15, y: br() * 1.3 - 0.15, z: br() * 2.2 - 0.6, ax: br() * 6.28, ay: br() * 6.28, az: br() * 6.28,
+      spin: (0.3 + br() * 1.0) * (br() < 0.5 ? -1 : 1), fw: 0.6 + br() * 1.4, ph: br() * 6.28, ph2: br() * 6.28, sway: 0.015 + br() * 0.04, fall: 0.008 + br() * 0.02, drift: (br() - 0.5) * 0.012,
+      w: (0.05 + br() * 0.045) * (narrow ? 1.5 : 1), ox: 0, oy: 0, ovx: 0, ovy: 0, sp: 0, spv: 0 });
+    var wtot = 0, wacc = []; segs.forEach(function (s) { wtot += s.len * thick(s.d); wacc.push(wtot); });
+    var leafSegs = segs.filter(function (t) { return !t.root && t.d >= 1; }), LR = [0, 0.36, 0.32, 0.25, 0.19, 0.15], ltot = 0, lacc = [];
+    leafSegs.forEach(function (t) { ltot += t.len * LR[t.d]; lacc.push(ltot); });
+    // 잎 한 점의 자리를 o2에 넣는다. 덩어리의 가운데가 빽빽하고 가장자리로 갈수록 성기다
+    function leafPt() {
+      var pk = rnd() * ltot, lo = 0, hi = lacc.length - 1; while (lo < hi) { var md = (lo + hi) >> 1; if (lacc[md] < pk) lo = md + 1; else hi = md; }
+      var t = leafSegs[lo], a = rnd() * 6.2832, r = (rnd() + rnd()) * 0.62 * LR[t.d]; bz(t, t.d === 1 ? 0.4 + rnd() * 0.6 : rnd(), o2);
+      o2[0] += Math.cos(a) * r; o2[1] += Math.sin(a) * r * 0.8 - 0.03;
+    }
+    // 열매가 달리는 자리: 수관 곳곳에(끝에만 몰리지 않게)
+    var spots = []; for (k = 0; k < 44; k++) { leafPt(); spots.push([o2[0], o2[1]]); }
+    var bookCol = [COL.white, COL.pale, COL.white, COL.blue, COL.white, COL.lilac];
+    for (i = 0; i < N; i++) {
+      var o = i * 2, cb = COL.dim, fr = 0, st;
+      if (role[i] === 0) {
+        var it = (rnd() * S) | 0, b = Math.min(NB - 1, Math.floor(it * NB / S)); itemOf[i] = it; bookOf[i] = b;
+        // 쪽의 입자: 대부분은 쪽의 모양 위에, 일부는 그 둘레의 안개로
+        if (Q[i * 4 + 2] < 0.07) { haze[i] = 1; shLocal[o] = gauss() * 0.8; shLocal[o + 1] = gauss() * 0.8; } else { haze[i] = 0; sampleKind(items[it].kind); shLocal[o] = pt[0] + gauss() * 0.012; shLocal[o + 1] = pt[1] + gauss() * 0.012; }
+        // 책 한 권 안의 자리: 테두리, 책등의 띠 둘, 옅은 속
+        var v0 = rnd(), bu, bv, sl = slots[b];
+        if (v0 < 0.45) { var pp = rnd() * 2.4; if (pp < 1) { bu = pp; bv = 0; } else if (pp < 2) { bu = pp - 1; bv = 1; } else if (pp < 2.2) { bu = 0; bv = (pp - 2) * 5; } else { bu = 1; bv = (pp - 2.2) * 5; } }
+        else if (v0 < 0.6) { bu = rnd() < 0.5 ? 0.14 : 0.22; bv = rnd(); } else { bu = rnd(); bv = rnd(); }
+        lx[i] = sl.x + bv * sl.w; ly[i] = sl.yb - bu * sl.h;
+        st = pickSite(); siteX[i] = st.x; siteY[i] = st.y; siteD[i] = st.dist * (0.85 + 0.3 * rnd()); st = sites[(rnd() * sites.length) | 0]; sx2[i] = st.x; sy2[i] = st.y; rootlet(i, st); cb = bookCol[b % bookCol.length];
+        wU[i] = 0;
+        if (rnd() < 0.66) {
+          wU[i] = 1; var ra = rnd() * 6.2832, rr;
+          if (rnd() < 0.32) { var ts = segs[0], tk = 0; for (tk = 0; tk < 12; tk++) { ts = segs[(rnd() * segs.length) | 0]; if (!ts.root && ts.d <= 1) break; } var tu = rnd(), tj = gauss() * thick(ts.d) * 0.6 * (ts.d === 0 ? 1.9 - tu * 0.9 : 1); bz(ts, tu, o2); wx[i] = o2[0] + ts.nx * tj; wy[i] = o2[1] + ts.ny * tj; fr = 0.03; }
+          else { leafPt(); wx[i] = o2[0]; wy[i] = o2[1]; fr = 0.1 + rnd() * 0.1; }
+        }
+        if (fr === 0 && rnd() < 0.7) fr = 0.5;   // 잎이 되지 않는 입자 가운데 일부는 코드 장면의 주황빛 줄이 된다
+      } else if (role[i] === 1) {
+        // 책장의 틀: 테두리와 칸 판
+        if (rnd() < 0.55) { var pe = rnd() * 2 * (SW + SH); if (pe < SW) { lx[i] = -SW / 2 + pe; ly[i] = -SH / 2; } else if (pe < SW + SH) { lx[i] = SW / 2; ly[i] = -SH / 2 + pe - SW; } else if (pe < 2 * SW + SH) { lx[i] = SW / 2 - (pe - SW - SH); ly[i] = SH / 2; } else { lx[i] = -SW / 2; ly[i] = SH / 2 - (pe - 2 * SW - SH); } }
+        else { lx[i] = (rnd() - 0.5) * SW; ly[i] = -SH / 2 + SH / 4 * (1 + ((rnd() * 3) | 0)); }
+        st = pickSite(); siteX[i] = st.x; siteY[i] = st.y; siteD[i] = st.dist * (0.85 + 0.3 * rnd()); st = sites[(rnd() * sites.length) | 0]; sx2[i] = st.x; sy2[i] = st.y; rootlet(i, st);
+      } else if (role[i] === 2) {
+        // 가지와 줄기: 굵기에 맞춰 나눈다
+        var pk = rnd() * wtot, lo = 0, hi = wacc.length - 1; while (lo < hi) { var mid = (lo + hi) >> 1; if (wacc[mid] < pk) lo = mid + 1; else hi = mid; }
+        var sg = segs[lo], uu = rnd(), jt = gauss() * thick(sg.d) * 0.45 * (sg.d === 0 ? 1.7 - uu * 0.9 : 1); wSeg[i] = lo; wU[i] = uu; bz(sg, uu, o2); wx[i] = o2[0] + sg.nx * jt; wy[i] = o2[1] + sg.ny * jt; cb = COL.white; fr = 0.03;
+      } else if (role[i] === 3) {
+        // 잎과 열매: 가지 끝마다 잎이 돋고, 가지 끝 셋에 하나는 열매가 달린다
+        var fa = rnd() * 6.2832, tp, frr;
+        if (rnd() < 0.8) { leafPt(); wx[i] = o2[0]; wy[i] = o2[1]; cb = COL.pale; fr = 0.1 + rnd() * 0.1; }
+        else { tp = spots[(rnd() * spots.length) | 0]; frr = Math.sqrt(rnd()) * 0.05; wx[i] = tp[0] + Math.cos(fa) * frr; wy[i] = tp[1] + Math.sin(fa) * frr; fr = 1; cb = COL.white; }
+      }
+      colBuf[i * 4] = cb[0]; colBuf[i * 4 + 1] = cb[1]; colBuf[i * 4 + 2] = cb[2]; colBuf[i * 4 + 3] = fr; ck[i] = cb === COL.white ? 1 : cb === COL.pale ? 2 : cb === COL.blue ? 3 : cb === COL.lilac ? 4 : 0;
+    }
+    gl.bindBuffer(gl.ARRAY_BUFFER, bufCol); gl.bufferData(gl.ARRAY_BUFFER, colBuf, gl.STATIC_DRAW);
+    layoutEnd();
+  }
+  // 코드: 글자를 보이지 않는 캔버스에 그려 그 점들을 입자의 자리로 쓴다. 틀: 둥근 네모의 테두리
+  var askEl = document.getElementById('ask');
+  function layoutEnd() {
+    // 06 장면: 입체로 쌓인 세 층의 시스템 그림(위에서 비스듬히 내려다본 모습). 아래부터 데이터, 서비스, 클라이언트 층이다.
+    // 판 위에 크기가 다른 덩어리(서버, 저장소, 화면)가 놓이고, 층 사이를 세로 점선이 잇는다. Claude로 가는 길만 강조색이다.
+    // 같은 그림을 두 번 그린다: 보이지 않는 캔버스(입자가 모일 자리)와 화면에 보이는 캔버스(또렷한 선과 테마의 색).
+    // 자리의 단위는 판의 한 칸이다. 판은 NP칸 × NP칸이고, x는 오른쪽 아래로, y는 왼쪽 아래로, z는 위로 간다
+    var cw = Math.round(narrow ? W * 0.94 : W * 0.535), chh = Math.round(narrow ? H * 0.46 : H * 0.72), x0 = narrow ? W * 0.03 : W * 0.432, y0 = (narrow ? H * 0.66 : H * 0.5) - chh / 2;
+    var cv = document.createElement('canvas'), i, k; cv.width = cw + 8; cv.height = chh + 8;
+    var NP = 6, ZL = [0, 3.1, 6.2], TH = 0.16, C30 = 0.866, S30 = 0.5, S = Math.min(cw / 16.8, chh / 13.9), OX = cw * 0.5, OY = 6.85 * S + (chh - 13.6 * S) / 2;
+    var lw = Math.max(1, S / 36), FONT = '"Pretendard", "Malgun Gothic", sans-serif', fs = Math.max(9, Math.round(S * 0.3)), cx2, COLH, COLN, BGC, TINT, SAMPLE;
+    function P(x, y, z) { return [OX + (x - y) * C30 * S, OY + (x + y) * S30 * S - z * S]; }
+    function ink(hot, wt) { cx2.strokeStyle = hot ? COLH : COLN; cx2.lineWidth = lw * (wt || 1); }
+    // 면을 바탕색으로 덮은 뒤(뒤의 선을 가린다) 옅게 칠한다. shade가 클수록 어두운 면이다
+    function fillIt(shade, hot) { cx2.fillStyle = BGC; cx2.fill(); if (TINT) { cx2.fillStyle = 'rgba(' + TINT + ',' + (shade * (hot ? 2.6 : 1)) + ')'; cx2.fill(); } }
+    function face(pts, shade, hot) { cx2.beginPath(); for (var q = 0; q < pts.length; q++) { if (q) cx2.lineTo(pts[q][0], pts[q][1]); else cx2.moveTo(pts[q][0], pts[q][1]); } cx2.closePath(); fillIt(shade, hot); cx2.stroke(); }
+    function box(x, y, z, w, d, h, hot, wt) { ink(hot, wt || 1.2);
+      face([P(x, y + d, z), P(x + w, y + d, z), P(x + w, y + d, z + h), P(x, y + d, z + h)], 0.13, hot);
+      face([P(x + w, y, z), P(x + w, y + d, z), P(x + w, y + d, z + h), P(x + w, y, z + h)], 0.24, hot);
+      face([P(x, y, z + h), P(x + w, y, z + h), P(x + w, y + d, z + h), P(x, y + d, z + h)], 0.05, hot); }
+    function cyl(cxu, cyu, z, r, h, hot) { ink(hot, 1.2); var ea = r * C30 * 1.4142 * S, eb = r * S30 * 1.4142 * S, t = P(cxu, cyu, z + h), bt = P(cxu, cyu, z);
+      cx2.beginPath(); cx2.moveTo(bt[0] - ea, bt[1]); cx2.ellipse(bt[0], bt[1], ea, eb, 0, Math.PI, 0, true); cx2.lineTo(t[0] + ea, t[1]); cx2.ellipse(t[0], t[1], ea, eb, 0, 0, Math.PI, false); cx2.closePath(); fillIt(0.19, hot); cx2.stroke();
+      cx2.beginPath(); cx2.ellipse(t[0], t[1], ea, eb, 0, 0, 6.2832); fillIt(0.05, hot); cx2.stroke(); }
+    // 판 위에 놓인 선(회로처럼 구성 요소를 잇는다)
+    function tr(pts, z, hot) { ink(hot, hot ? 1.7 : 0.9); cx2.beginPath(); for (var q = 0; q < pts.length; q += 2) { var a = P(pts[q], pts[q + 1], z); if (q) cx2.lineTo(a[0], a[1]); else cx2.moveTo(a[0], a[1]); } cx2.stroke(); }
+    // 층 사이를 잇는 세로 점선. 아래 끝에 점을 찍는다
+    function up(x, y, za, zb, hot) { ink(hot, hot ? 1.8 : 1.1); var a = P(x, y, za), bb = P(x, y, zb); cx2.setLineDash([lw * 2.6, lw * 3]); cx2.beginPath(); cx2.moveTo(a[0], a[1]); cx2.lineTo(bb[0], bb[1]); cx2.stroke(); cx2.setLineDash([]); cx2.fillStyle = hot ? COLH : COLN; cx2.beginPath(); cx2.arc(a[0], a[1], lw * 1.9, 0, 6.2832); cx2.fill(); }
+    function plate(z, t) { ink(0, 1.7);
+      face([P(0, NP, z - TH), P(NP, NP, z - TH), P(NP, NP, z), P(0, NP, z)], 0.12); face([P(NP, 0, z - TH), P(NP, NP, z - TH), P(NP, NP, z), P(NP, 0, z)], 0.2); face([P(0, 0, z), P(NP, 0, z), P(NP, NP, z), P(0, NP, z)], 0.035);
+      if (!SAMPLE) { cx2.fillStyle = COLN; cx2.globalAlpha = 0.2; for (var gx = 1; gx < NP; gx++) for (var gy = 1; gy < NP; gy++) { var g = P(gx, gy, z); cx2.beginPath(); cx2.arc(g[0], g[1], lw * 0.75, 0, 6.2832); cx2.fill(); } cx2.globalAlpha = 1; }
+      var c = P(0, NP, z); ink(0, 0.9); cx2.beginPath(); cx2.moveTo(c[0] - S * 0.14, c[1]); cx2.lineTo(c[0] - S * 0.7, c[1]); cx2.stroke(); cx2.fillStyle = COLN; cx2.font = '700 ' + fs + 'px ' + FONT; cx2.textAlign = 'right'; cx2.textBaseline = 'middle'; cx2.fillText(t, c[0] - S * 0.86, c[1] + 1); }
+    function paintArch() {
+      var z, q, hs;
+      // ── 데이터 층: 원통(데이터베이스, 캐시, 벡터), 쌓인 판(저장소), 낮은 덩어리(큐) ──
+      z = ZL[0]; plate(z, 'DATA');
+      tr([1.5, 1.3, 3.3, 1.1], z); tr([1.5, 1.3, 1.5, 3.9], z); tr([3.3, 1.1, 3.65, 4.25], z); tr([4.85, 2.35, 5.15, 4.95], z); tr([1.4, 3.9, 3.0, 4.25], z);
+      cyl(1.5, 1.3, z, 0.72, 1.0); cyl(3.3, 1.1, z, 0.58, 0.8); cyl(1.4, 3.9, z, 0.62, 0.42); cyl(4.85, 2.35, z, 0.56, 0.95, 1);
+      box(3.0, 3.6, z, 1.3, 1.3, 0.2); box(3.0, 3.6, z + 0.3, 1.3, 1.3, 0.2); box(3.0, 3.6, z + 0.6, 1.3, 1.3, 0.2); box(4.7, 4.5, z, 0.9, 0.9, 0.3);
+      up(1.5, 1.3, z + 1.0, ZL[1] - TH); up(3.3, 1.1, z + 0.8, ZL[1] - TH); up(1.4, 3.9, z + 0.42, ZL[1] - TH); up(3.65, 4.25, z + 0.8, ZL[1] - TH); up(4.85, 2.35, z + 0.95, ZL[1] - TH, 1);
+      // ── 서비스 층: 긴 로드밸런서, 높이가 다른 서버들, 워커, 그리고 높게 선 에이전트(강조) ──
+      z = ZL[1]; plate(z, 'SERVICE');
+      for (q = 0; q < 3; q++) { tr([1.1 + q * 1.25, 1.0, 1.1 + q * 1.25, 3.6], z); } tr([4.85, 1.0, 4.85, 1.9], z, 1); tr([1.1, 4.0, 1.5, 4.9], z); tr([2.35, 4.0, 2.9, 4.9], z); tr([3.6, 4.0, 4.3, 4.9], z);
+      box(0.5, 0.45, z, 5.0, 0.55, 0.28, 0, 1.4);
+      hs = [0.95, 0.6, 1.15]; for (q = 0; q < 3; q++) box(0.7 + q * 1.25, 1.7, z, 0.8, 0.8, hs[q]);
+      box(4.4, 1.9, z, 0.9, 0.9, 1.55, 1, 1.8);
+      hs = [0.55, 0.9, 0.5]; for (q = 0; q < 3; q++) box(0.7 + q * 1.25, 3.2, z, 0.8, 0.8, hs[q]);
+      for (q = 0; q < 3; q++) box(1.2 + q * 1.4, 4.6, z, 0.6, 0.6, 0.38);
+      up(1.0, 0.72, z + 0.28, ZL[2] - TH); up(3.0, 0.72, z + 0.28, ZL[2] - TH); up(5.0, 0.72, z + 0.28, ZL[2] - TH, 1);
+      // Claude: 서비스 층 옆에 떠 있는 정육면체(윤곽이 육각형이다). 에이전트와 강조색 점선으로 이어진다
+      var ca = P(5.3, 1.9, z + 1.25), cb = P(7.3, 0.9, 4.75); ink(1, 1.8); cx2.setLineDash([lw * 2.6, lw * 3]); cx2.beginPath(); cx2.moveTo(ca[0], ca[1]); cx2.lineTo(cb[0], cb[1]); cx2.stroke(); cx2.setLineDash([]);
+      box(7.3, 0.2, 4.2, 1.15, 1.15, 1.15, 1, 2.1); var cl = P(8.45, 1.35, 4.2); cx2.fillStyle = COLH; cx2.font = '800 ' + Math.round(fs * 1.15) + 'px ' + FONT; cx2.textAlign = 'center'; cx2.textBaseline = 'middle'; cx2.fillText('Claude', cl[0] - S * 0.02, cl[1] + S * 0.42);
+      // ── 클라이언트 층: 세워 둔 화면 셋, CDN(낮은 원통), 게이트웨이(긴 덩어리) ──
+      z = ZL[2]; plate(z, 'CLIENT');
+      tr([1.2, 1.4, 1.2, 3.0, 3.2, 3.0, 3.2, 3.6], z); tr([2.7, 1.4, 2.7, 3.0], z); tr([4.3, 1.4, 4.3, 3.3], z, 1); tr([1.5, 3.45, 1.5, 3.0], z); tr([5.0, 4.05, 5.0, 0.72], z, 1);
+      box(0.7, 1.2, z, 1.0, 0.12, 0.75); box(2.45, 1.2, z, 0.5, 0.12, 0.9); box(3.8, 1.2, z, 1.0, 0.12, 0.75, 1, 1.5);
+      cyl(1.5, 4.2, z, 0.75, 0.18); box(3.2, 3.3, z, 2.2, 0.75, 0.32, 0, 1.4);
+    }
+    cx2 = cv.getContext('2d'); cx2.translate(4, 4); cx2.lineJoin = 'round'; cx2.lineCap = 'round';
+    COLH = '#ff0000'; COLN = '#ffffff'; BGC = '#000000'; TINT = null; SAMPLE = true; paintArch();
+    // 흰 선은 보통 입자의 자리, 빨간 선은 강조색 입자의 자리다. 면을 덮은 검정은 쓰지 않는다
+    var img = cx2.getImageData(0, 0, cv.width, cv.height).data, plain = [], accent = [];
+    for (var yy = 0; yy < cv.height; yy++) for (var xx = 0; xx < cv.width; xx++) { k = (yy * cv.width + xx) * 4; if (img[k + 3] > 110 && img[k] > 120) (img[k + 1] < 100 ? accent : plain).push(xx, yy); }
+    var av = document.getElementById('arch'), cs = getComputedStyle(document.documentElement);
+    av.width = cv.width; av.height = cv.height; av.style.left = ((x0 - 4) / dpr) + 'px'; av.style.top = ((y0 - 4) / dpr) + 'px'; av.style.width = (cv.width / dpr) + 'px'; av.style.height = (cv.height / dpr) + 'px';
+    cx2 = av.getContext('2d'); cx2.setTransform(1, 0, 0, 1, 0, 0); cx2.clearRect(0, 0, av.width, av.height); cx2.translate(4, 4); cx2.lineJoin = 'round'; cx2.lineCap = 'round';
+    COLH = cs.getPropertyValue('--accent').trim() || '#6d4fe0'; COLN = cs.getPropertyValue('--fgc').trim() || '#1d1933'; BGC = cs.getPropertyValue('--bg').trim() || '#ffffff'; TINT = cs.getPropertyValue('--glow').trim() || '109,79,224'; SAMPLE = false; paintArch();
+    if (!plain.length) plain = [0, 0]; if (!accent.length) accent = plain;
+    // 틀: 질문 칸을 두를 길고 둥근 테두리. 화면 가운데에 두고, 제목은 그 위에, 예시 질문은 그 아래에 둔다
+    var bw = narrow ? W * 0.9 : Math.min(W * 0.46, 760 * dpr), bh = Math.max(56 * dpr, Math.min(104 * dpr, bw * 0.16)), bx = (narrow ? W / 2 : W * 0.7) - bw / 2, by = H * (narrow ? 0.62 : 0.46) - bh / 2, rad = bh / 2, strt = bw - bh, per = 2 * strt + Math.PI * bh;
+    var fEl = document.getElementById('askForm'); fEl.style.left = (bx / dpr) + 'px'; fEl.style.top = (by / dpr) + 'px'; fEl.style.width = (bw / dpr) + 'px'; fEl.style.height = (bh / dpr) + 'px'; fEl.style.paddingRight = (bh * 0.21 / dpr) + 'px'; var bEl = fEl.querySelector('button'), bs = Math.round(bh * 0.58 / dpr) + 'px'; bEl.style.width = bs; bEl.style.height = bs;   // 단추(높이의 58%)가 틀의 둥근 끝과 가운데가 같게
+    var chEl = document.getElementById('askChips'), ntEl = document.getElementById('askNote'); chEl.style.left = ntEl.style.left = (bx / dpr) + 'px'; chEl.style.width = ntEl.style.width = (bw / dpr) + 'px'; chEl.style.top = ((by + bh * 1.3) / dpr) + 'px'; ntEl.style.top = ((by + bh * 1.3) / dpr + chEl.offsetHeight + 14) + 'px';
+    for (i = 0; i < N; i++) {
+      var o = i * 2, isF = colBuf[i * 4 + 3] > 0.25, src = isF ? accent : plain; k = ((rnd() * (src.length / 2)) | 0) * 2;
+      tCode[o] = x0 + src[k] + (rnd() - 0.5) * 0.7; tCode[o + 1] = y0 + src[k + 1] + (rnd() - 0.5) * 0.7; tDl[i] = src[k] / cv.width * 0.45 + src[k + 1] / cv.height * 0.08 + rnd() * 0.03;
+      // 흰 입자는 테두리 위에, 주황빛 입자는 틀 둘레에 넓게 퍼지는 먼지로
+      var px, py;
+      if (colBuf[i * 4 + 3] > 0.75) {
+        var br2 = bh * 0.29, bcx = bx + bw - bh * 0.21 - br2, bcy = by + rad, pk2 = rnd(), ba, bt;
+        if (pk2 < 0.5) { ba = rnd() * 6.2832; px = bcx + Math.cos(ba) * br2; py = bcy + Math.sin(ba) * br2; }                                        // 테두리
+        else if (pk2 < 0.52) { ba = rnd() * 6.2832; bt = Math.sqrt(rnd()) * br2 * 0.92; px = bcx + Math.cos(ba) * bt; py = bcy + Math.sin(ba) * bt; }   // 옅은 속
+        else if (pk2 < 0.8) { bt = rnd(); px = bcx + (bt * 0.9 - 0.45) * br2; py = bcy; }                                                           // 화살표의 대
+        else { bt = rnd(); px = bcx + (0.45 - bt * 0.36) * br2; py = bcy + (pk2 < 0.9 ? 1 : -1) * bt * 0.36 * br2; }                                  // 화살표의 머리
+        px += gauss() * 0.35 * dpr; py += gauss() * 0.35 * dpr;
+      }
+      else { var t = rnd() * per, an2;
+        if (t < strt) { px = bx + rad + t; py = by; } else if (t < strt + Math.PI * rad) { an2 = -Math.PI / 2 + (t - strt) / rad; px = bx + bw - rad + Math.cos(an2) * rad; py = by + rad + Math.sin(an2) * rad; }
+        else if (t < 2 * strt + Math.PI * rad) { px = bx + bw - rad - (t - strt - Math.PI * rad); py = by + bh; } else { an2 = Math.PI / 2 + (t - 2 * strt - Math.PI * rad) / rad; px = bx + rad + Math.cos(an2) * rad; py = by + rad + Math.sin(an2) * rad; }
+        var sp2 = (rnd() < 0.06 ? 2.2 : 0.7) * dpr; px += gauss() * sp2; py += gauss() * sp2; }
+      tBox[o] = px; tBox[o + 1] = py;
+    }
+  }
+  document.getElementById('askChips').addEventListener('click', function (e) { if (e.target.tagName === 'BUTTON') { var inp = document.getElementById('askInput'); inp.value = e.target.textContent; inp.focus(); } });
+  askEl.addEventListener('submit', function (e) { e.preventDefault(); document.getElementById('askNote').textContent = '시안입니다. 입력한 내용은 보내지 않았습니다.'; });
+
+  // 흩날림: 쪽마다 흔들리며 떨어지고, 세 축으로 돌고 뒤집힌다. 마우스 가까운 쪽은 통째로 밀려난다. 쪽이 아닌 입자는 먼지처럼 떠다닌다
+  function floodTargets(wind, dt) {
+    var m = Math.max(W, H), t = time, Rm = 170 * dpr, R2 = Rm * Rm, k, i;
+    for (k = 0; k < S; k++) {
+      var s = items[k], sc = 1.9 / (1.9 + s.z);
+      var px = wrap(s.x + t * s.drift + Math.sin(t * s.fw * 0.5 + s.ph) * s.sway), py = wrap(s.y + t * s.fall);
+      var cx = (narrow ? W / 2 : W * 0.64) + (px - 0.5) * (narrow ? W : W * 0.84) * sc + s.ox, cy = H / 2 + (py - 0.5) * H * sc + s.oy;
+      if (wind && mouse.on) { var dx = cx - mouse.x, dy = cy - mouse.y, d2 = dx * dx + dy * dy; if (d2 < R2) { var d = Math.sqrt(d2) + 0.001, g = 1 - d / Rm; s.ovx += dx / d * g * 1.8 * dpr * dt; s.ovy += (dy / d * g * 1.8 - g * 0.5) * dpr * dt; s.spv += g * 0.05 * dt; } }
+      s.ox += s.ovx * dt; s.oy += s.ovy * dt; s.ovx *= 0.93; s.ovy *= 0.93; s.ox *= 0.997; s.oy *= 0.997; s.sp += s.spv * dt; s.spv *= 0.96;
+      var ax = s.ax + t * s.spin + s.sp, ay = s.ay + Math.sin(t * s.fw + s.ph) * 0.9, az = s.az + Math.sin(t * s.fw * 0.6 + s.ph2) * 0.5 + t * s.spin * 0.15;
+      var c1 = Math.cos(ax), s1 = Math.sin(ax), c2 = Math.cos(ay), s2 = Math.sin(ay), c3 = Math.cos(az), s3 = Math.sin(az), sz = s.w * m * sc, b = k * 8;
+      shPose[b] = cx; shPose[b + 1] = cy; shPose[b + 2] = c2 * c3 * sz; shPose[b + 3] = c2 * s3 * sz; shPose[b + 4] = (s1 * s2 * c3 - c1 * s3) * sz; shPose[b + 5] = (s1 * s2 * s3 + c1 * c3) * sz;
+      shPose[b + 6] = Math.max(0.5, Math.min(1, 0.55 + 0.7 * (sc - 0.5)));
+    }
+    for (i = 0; i < N; i++) {
+      var o = i * 2;
+      if (role[i] === 0) { var p = itemOf[i] * 8, ax2 = shLocal[o], ay2 = shLocal[o + 1]; tFlood[o] = shPose[p] + ax2 * shPose[p + 2] + ay2 * shPose[p + 4]; tFlood[o + 1] = shPose[p + 1] + ax2 * shPose[p + 3] + ay2 * shPose[p + 5]; }
+      else { tFlood[o] = wrap(Q[i * 4] + t * 0.01 * (Q[i * 4 + 2] - 0.5)) * W; tFlood[o + 1] = wrap(Q[i * 4 + 1] - t * 0.008 * (0.3 + Q[i * 4 + 3])) * H; }
+    }
+  }
+
+  /* ═════════ 스크롤을 장면으로 ═════════ */
+  function progress() { var y = (window.scrollY || 0) / (innerHeight || 1); for (var k = 0; k < NS - 1; k++) { if (y < STOPS[k] + HOLD) return k; if (y < STOPS[k + 1]) return k + (y - STOPS[k] - HOLD) / MV[k]; } return NS - 1; }
+
+  /* ═════════ 저절로 넘어가기 ═════════ */
+  var auto = { on: false, step: 0, phase: 'hold', t: 0, from: 0 }, skipBtn = document.getElementById('auto');
+  function seen() { try { return localStorage.getItem(CONFIG.autoplay.seenKey) === '1'; } catch (e) { return false; } }
+  function stopAuto() { if (!auto.on) return; auto.on = false; root.classList.remove('auto'); try { localStorage.setItem(CONFIG.autoplay.seenKey, '1'); } catch (e) {} }
+  function startAuto(here) {
+    // here: 지금 보고 있는 장면부터 넘긴다. 마지막 장면이면 처음으로 돌아가 시작한다
+    var k = 0; if (here) { var y = (window.scrollY || 0) / innerHeight; for (var j = 0; j < NS; j++) if (STOPS[j] <= y + 0.05) k = j; if (k >= NS - 1) k = 0; }
+    auto.on = true; auto.step = k; auto.phase = 'hold'; auto.t = here && k > 0 ? CONFIG.autoplay.hold[k] : 0; root.classList.add('auto'); if (k === 0) window.scrollTo(0, 0);
+  }
+  function stepAuto(sec) {
+    var A = CONFIG.autoplay, vh = innerHeight; auto.t += sec;
+    if (auto.phase === 'hold') { if (auto.t >= A.hold[auto.step]) { auto.phase = 'move'; auto.t = 0; auto.from = STOPS[auto.step] + HOLD; window.scrollTo(0, auto.from * vh); } return; }
+    var k = Math.min(1, auto.t / A.move[auto.step]); window.scrollTo(0, (auto.from + (STOPS[auto.step + 1] - auto.from) * k) * vh);
+    if (k >= 1) { auto.step++; auto.phase = 'hold'; auto.t = 0; if (auto.step >= NS - 1) stopAuto(); }
+  }
+  ['wheel', 'touchstart', 'keydown', 'pointerdown'].forEach(function (ev) { window.addEventListener(ev, function (e) { if (e.target && e.target.nodeType === 1 && skipBtn.contains(e.target)) return; stopAuto(); }, { passive: true }); });
+  skipBtn.addEventListener('click', function () { if (auto.on) stopAuto(); else startAuto(true); });
+
+  /* ═════════ 마우스와 창 ═════════ */
+  function point(e) { var t = e.touches ? e.touches[0] : e; if (!t) return; mouse.x = t.clientX * dpr; mouse.y = t.clientY * dpr; if (mAmt < 0.02) { mouseS.x = mouse.x; mouseS.y = mouse.y; } mouse.on = true; }
+  window.addEventListener('mousemove', point, { passive: true }); window.addEventListener('touchmove', point, { passive: true }); window.addEventListener('touchstart', point, { passive: true });
+  window.addEventListener('touchend', function () { mouse.on = false; }, { passive: true }); document.addEventListener('mouseleave', function () { mouse.on = false; }); window.addEventListener('blur', function () { mouse.on = false; });
+  var resizing; window.addEventListener('resize', function () { clearTimeout(resizing); resizing = setTimeout(function () { if (W && innerWidth && innerHeight) { layout(); if (still) stillFrame(); } }, 200); });
+
+  /* ═════════ 눈(카메라) ═════════ */
+  // c는 멀어진 정도다(0 책장 하나 → 1 뿌리 위의 책장들 → 2 뿌리 전체 → 3 나무 전체). 눈의 자리는 첫 책장에서 뿌리의 가운데로, 다시 나무의 가운데로 옮겨 간다
+  var cam = { z: 1, fx: 0, fy: 0, cx: 0, cy: 0, viewR: 0 };
+  function setCam(c) {
+    var aw = narrow ? W * 0.94 : W * 0.52, ah = narrow ? H * 0.5 : H * 0.72;   // 그림이 들어갈 칸의 폭과 높이
+    var z0 = Math.min(aw * 0.96, ah) / SW, z1 = z0 / 4.2, z2 = Math.min(z1 * 0.6, aw / boxRoot.w, ah / boxRoot.h), z3 = Math.min(aw * 0.94 / boxAll.w, ah / boxAll.h);
+    var zk = [Math.log(z0), Math.log(z1), Math.log(z2), Math.log(z3)], fxk = [home.x, home.x, boxRoot.cx, boxAll.cx], fyk = [home.y, home.y, boxRoot.cy, boxAll.cy];
+    var k = Math.min(2, Math.floor(c)), f = c - k, e = f * f * (3 - 2 * f);
+    cam.z = Math.exp(zk[k] + (zk[k + 1] - zk[k]) * f); cam.fx = fxk[k] + (fxk[k + 1] - fxk[k]) * e; cam.fy = fyk[k] + (fyk[k + 1] - fyk[k]) * e;
+    cam.cx = narrow ? W / 2 : W * 0.7; cam.cy = narrow ? H * 0.66 : H / 2; cam.viewR = Math.min(W, H) * 0.5 / cam.z;
+  }
+  function swayAt(y) { return Math.max(0, Math.min(1, -y / 3)); }
+
+  /* ═════════ 한 장면 그리기 ═════════ */
+  var last = performance.now(), frames = 0, shown = last, fps = 0, cur = -1, tuned = false, born = last;
+  function frame(now) {
+    var dt = Math.min((now - last) / 16.67, 2.5); if (auto.on) stepAuto(Math.min(0.1, (now - last) / 1000)); last = now; time += dt * 0.016;
+    var sc = progress(); mov += (Math.min(1, Math.abs(sc - scPrev) * 40) - mov) * 0.12; scPrev = sc; var msx = (mouseS.x += (mouse.x - mouseS.x) * 0.22), msy = (mouseS.y += (mouse.y - mouseS.y) * 0.22); mAmt += ((mouse.on ? 1 : 0) - mAmt) * 0.08;   // 마우스의 자리는 부드럽게 따라가고, 들어오고 나갈 때 천천히 세지고 약해진다
+    var f = Math.min(1, sc), c = Math.max(0, Math.min(3, sc - 1)), e2 = Math.max(0, sc - 4);
+    var sol = CONFIG.themes[themeName] && CONFIG.themes[themeName].solid ? 1 : 0;   // 흰 바탕 테마인가
+    floodTargets(sc < 0.05, dt); setCam(c); ripe = sstep(2.82, 3, c); accV = sstep(4.3, 4.8, sc) * (1 - 0.65 * sstep(5.15, 5.7, sc)); leafV = sstep(2.45, 2.9, c) * (1 - sstep(4.22, 4.6, sc)); lateV = sstep(4.3, 4.8, sc);
+    // 줄기와 가지는 눈이 뿌리 전체를 볼 때쯤부터 아래에서 위로 자란다
+    var G = sstep(1.7, 2.8, c), ot = [0, 0];
+    for (var sk = 0; sk < segs.length; sk++) { var sg0 = segs[sk]; if (sg0.root) continue; sg0.g = Math.max(0, Math.min(1, (G - sg0.st) / (sg0.en - sg0.st))); bz(sg0, sg0.g, ot); sg0.tx = ot[0]; sg0.ty = ot[1]; }
+    var flow = sstep(1, 1.6, c), flowT = time * 0.3;
+    var Z = cam.z, vr = cam.viewR, Rm = 120 * dpr, R2 = Rm * Rm, push = sc < 1 ? 0.15 + 0.85 * f : 1, far = c / 3, sway = sstep(2.6, 3, c);
+    var wWood = sstep(0.05, 0.6, c), wFruit = sstep(2.6, 2.92, c), follow = c > 0 ? 0.3 : 0;
+    for (var i = 0; i < N; i++) {
+      var o = i * 5, q = i * 2, x = data[o], y = data[o + 1], h = data[o + 2], rl = role[i], tx = tFlood[q], ty = tFlood[q + 1], al, th = 0, g = 0, lk = 0, mT, d, px, py;
+      if (rl === 4) al = 0;   // 배경에 늘 떠다니는 먼지는 두지 않는다
+      else if (rl <= 1) {
+        // 책과 틀: 처음에는 모두 첫 책장에 있고, 눈이 멀어지면 제 책장이 화면에 들어오기 전에 그리로 옮겨 가 있다
+        d = siteD[i]; var m = d > 0 ? sstep(d * 0.3, d * 0.75, vr) * sstep(0.02, 0.3, c) : 0;
+        var mF = c > 1.15 ? sstep(1.2 + Q[i * 4 + 3] * 0.3, 1.75 + Q[i * 4 + 3] * 0.3, c) : 0;   // 눈이 멀어지면 책장의 틀과 책이 모두 풀려, 그 자리에서 돋는 잔뿌리가 된다(네모난 책장은 남기지 않는다)
+        var mg = c > 1.2 ? sstep(1.25 + Q[i * 4 + 3] * 0.2, 1.8 + Q[i * 4 + 3] * 0.2, c) : 0, sX = siteX[i] + (sx2[i] - siteX[i]) * mg, sY = siteY[i] + (sy2[i] - siteY[i]) * mg, shr = 1 - 0.3 * mg, mm = Math.max(m, mg);   // mg: 모든 책장으로 퍼진 정도. 퍼지면 책장이 조금 작아진다
+        px = cam.cx + (home.x + (sX - home.x) * mm + lx[i] * shr + (rtx[i] - lx[i] * shr) * mF - cam.fx) * Z; py = cam.cy + (home.y + (sY - home.y) * mm + ly[i] * shr + (rty[i] - ly[i] * shr) * mF - cam.fy) * Z;
+        if (rl === 0 && wU[i] > 0 && c > 2.2) { var mR = sstep(2.25 + Q[i * 4 + 3] * 0.3, 2.6 + Q[i * 4 + 3] * 0.3, c), rx = cam.cx + (wx[i] - cam.fx) * Z, ry = cam.cy + (wy[i] - cam.fy) * Z; if (sway > 0) rx += Math.sin(time * 1.2 + wy[i] * 2.2) * sway * 3 * dpr * swayAt(wy[i]); px += (rx - px) * mR; py += (ry - py) * mR; }
+        if (sc < 1) {
+          if (rl === 0) { d = bookOf[i] / NB * 0.84; mT = sstep(d, d + 0.13, f); lk = (haze[i] ? 0.05 : 0.5) * (1 - mT); al = shPose[itemOf[i] * 8 + 6] * (haze[i] ? 0.55 : 1); al += (0.95 - al) * mT; }   // 쪽이 모여 책이 되어 한 권씩 꽂힌다
+          else { mT = sstep(0, 0.12, f); al = 0.8 * mT; }                                                                                                                         // 책장의 틀이 먼저 선다
+          tx += (px - tx) * mT; ty += (py - ty) * mT; if (mT >= 1) lk = 0.1;   // 꽂힌 책은 느슨하게 제자리로 모인다(굳게 묶지는 않는다)
+        } else { tx = px; ty = py; lk = follow; al = (rl === 0 ? 0.95 : 0.8) * (1 - far * (0.12 + 0.3 * mg + 0.55 * (1 - mg) * Math.max(0, 1 - siteD[i] / 0.5))); al *= 1 - 0.7 * mF * (1 - mg) * Math.max(0, 1 - siteD[i] / 0.5); if (rl === 0 && wU[i] > 0 && c > 2.2) al += ((colBuf[i * 4 + 3] > 0.05 && colBuf[i * 4 + 3] < 0.25 ? 0.9 : 0.85) - al) * sstep(2.3, 2.8, c); }   // 멀어지면 입자가 몰린 가까운 책장을 더 옅게 해서, 뿌리 전체의 책장이 고르게 보이게 한다
+      } else if (rl === 2) {
+        // 뿌리는 늘 있고, 줄기와 가지는 자란 데까지만 보인다. 덜 자란 가지의 입자는 자라는 끝에 모여 있다. 뿌리에서 위로 빛이 흐른다
+        var sg = segs[wSeg[i]], vis = 1, X = wx[i], Y = wy[i];
+        if (!sg.root) { if (sg.g <= 0) { X = sg.x1; Y = sg.y1; vis = 0; } else if (wU[i] > sg.g) { X = sg.tx; Y = sg.ty; vis = 0.4; } }
+        px = cam.cx + (X - cam.fx) * Z; py = cam.cy + (Y - cam.fy) * Z; if (sway > 0) px += Math.sin(time * 1.2 + Y * 2.2) * sway * 3 * dpr * swayAt(Y);
+        tx += (px - tx) * wWood; ty += (py - ty) * wWood; al = 0.9 * vis * wWood; lk = follow * wWood; if (!sg.root && sg.d >= 3) al *= 1 - 0.35 * wFruit;
+        if (flow > 0 && vis > 0.5) { var ph = frac(-Y * 0.45 - flowT) - 0.5; th = 0.6 * flow * Math.exp(-ph * ph / 0.004); }
+      } else {
+        px = cam.cx + (wx[i] - cam.fx) * Z; py = cam.cy + (wy[i] - cam.fy) * Z; if (sway > 0) px += Math.sin(time * 1.2 + wy[i] * 2.2) * sway * 3 * dpr * swayAt(wy[i]);
+        tx += (px - tx) * wFruit; ty += (py - ty) * wFruit; al = (colBuf[i * 4 + 3] > 0.75 ? 0.95 : 0.9) * wFruit; lk = follow * wFruit; g = (colBuf[i * 4 + 3] > 0.75 ? 1 : 0) * 0.8 * ripe * (0.8 + 0.2 * Math.sin(time * 3 + seed[i]));
+      }
+      // 나무 뒤: 입자가 코드의 글자로 모이고(e2 0~1), 다시 질문 칸의 틀로 모인다(e2 1~2)
+      if (e2 > 0 && rl !== 4) {
+        var dly = Q[i * 4 + 3] * 0.4;
+        if (e2 <= 1) { var m2 = sstep(0.25 + tDl[i] * 0.75, 0.25 + (tDl[i] + 0.38) * 0.75, e2); tx += (tCode[q] - tx) * m2; ty += (tCode[q + 1] - ty) * m2; al += ((colBuf[i * 4 + 3] > 0.25 ? 0.36 : 0.95) - al) * m2;   /* 주황빛 줄은 입자가 몰려 하얗게 뜨므로 옅게 한다 */ g *= 1 - m2; th *= 1 - m2; }
+        else { var m3 = sstep(dly, dly + 0.6, e2 - 1); tx = tCode[q] + (tBox[q] - tCode[q]) * m3; ty = tCode[q + 1] + (tBox[q + 1] - tCode[q + 1]) * m3; var frv = colBuf[i * 4 + 3]; al = 0.95 - (frv > 0.75 ? 0 : 0.4) * m3; g = frv > 0.75 ? 0.25 * m3 : 0; th = 0;  }
+        lk = 0.25 + 0.55 * (e2 <= 1 ? m2 * m2 : m3 * m3);   // 자리에 닿으면 떨림 없이 붙는다
+      }
+      if (sol && leafV > 0) { var fq = colBuf[i * 4 + 3]; if (fq > 0.05 && fq < 0.25) al *= 1 - 0.2 * leafV; }   // 밝은 바탕: 잎이 겹쳐 너무 짙어지지 않게
+      if (mAmt > 0.01 && al > 0.01) { var dx = tx - msx, dy = ty - msy, d2 = dx * dx + dy * dy; if (d2 < R2) { var dd = Math.sqrt(d2) + 0.001, gg = 1 - dd / Rm; gg = gg * gg * (3 - 2 * gg) * push * mAmt; tx += (dx / dd * 20 - dy / dd * 8) * gg * dpr; ty += (dy / dd * 20 + dx / dd * 8) * gg * dpr; th = Math.max(th, gg * (sol ? 0.3 : 0.7)); } }
+      var ax = (tx - x) * 0.03 + Math.cos(seed[i] + time * 1.7 + y * 0.004) * 0.03 * dpr, ay = (ty - y) * 0.03 + Math.sin(seed[i] * 1.3 + time * 1.3 + x * 0.004) * 0.03 * dpr;
+      vel[q] = (vel[q] + ax * dt) * 0.86; vel[q + 1] = (vel[q + 1] + ay * dt) * 0.86; x += vel[q] * dt; y += vel[q + 1] * dt;
+      if (lk > 0) { var lkd = dt === 1 ? lk : 1 - Math.pow(1 - lk, dt); x += (tx - x) * lkd; y += (ty - y) * lkd; }
+      if (sc > 4.7 && sc < 5.3) al *= 1 - sstep(4.84, 5, sc) * (1 - sstep(5.02, 5.2, sc));   // 또렷한 그림이 나타나는 동안 입자는 옅어진다
+      data[o] = x; data[o + 1] = y; data[o + 2] = h + (th - h) * (th > h ? 0.2 : 0.06); data[o + 3] += (g - data[o + 3]) * 0.12; data[o + 4] += (al - data[o + 4]) * 0.12;
+    }
+    draw(sstep(0.1, 1, sc) * (1 - sstep(4.1, 4.7, sc)), 1.9 - 0.15 * far + (sol ? -0.55 : 0.1) * Math.min(1, e2));
+    document.getElementById('arch').style.opacity = sstep(4.86, 5, sc) * (1 - sstep(5.03, 5.25, sc));
+    var askOn = sstep(5.6, 5.95, sc); askEl.style.opacity = askOn; askEl.style.pointerEvents = askOn > 0.6 ? 'auto' : 'none'; askEl.style.visibility = askOn > 0 ? 'visible' : 'hidden';
+    var active = Math.min(NS - 1, Math.round(sc - 0.15)); if (active !== cur) { cur = active; dotEls.forEach(function (el, k) { el.classList.toggle('on', k === cur); }); copyEls.forEach(function (el, k) { el.classList.toggle('on', k === cur); }); }
+    frames++;
+    if (now - shown > 1000) { fps = Math.round(frames * 1000 / (now - shown)); frames = 0; shown = now;
+      if (!tuned && now - born > 2500) { tuned = true; if (fps < 30) { budget = 0.65; setup(); } } }     // 느린 기기: 입자와 자료의 수를 한 번 줄인다
+    if (debug) foot.textContent = '장면 ' + (cur + 1) + ' ' + CONFIG.scenes[cur].name + ' · 입자 ' + N.toLocaleString() + ' · 책장 ' + sites.length + ' · ' + fps + ' FPS';
+    requestAnimationFrame(frame);
+  }
+  function draw(tb, size) { size *= gain;
+    gl.clearColor(COL.bg[0], COL.bg[1], COL.bg[2], 1); gl.clear(gl.COLOR_BUFFER_BIT); gl.useProgram(prog);
+    Object.keys(AT).forEach(function (n) { if (AT[n] >= 0) gl.enableVertexAttribArray(AT[n]); });
+    gl.uniform3fv(UN.white, COL.white); gl.uniform3fv(UN.hot, COL.hot); gl.uniform3fv(UN.fruit, COL.fruit); gl.uniform1f(UN.tb, tb); gl.uniform1f(UN.ripe, ripe); gl.uniform1f(UN.acc, accV); gl.uniform1f(UN.leaf, leafV); gl.uniform3fv(UN.g1, COL.leaf1); gl.uniform3fv(UN.g2, COL.leaf2); gl.uniform3fv(UN.brown, COL.brown); gl.uniform1f(UN.only, 0); gl.uniform3fv(UN.accent, COL.accent); gl.uniform1f(UN.late, lateV); var ink = CONFIG.themes[themeName] && CONFIG.themes[themeName].solid ? 1 : 0; gl.uniform1f(UN.mul, ink); if (ink) gl.blendFunc(gl.ZERO, gl.ONE_MINUS_SRC_COLOR); else gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+    gl.bindBuffer(gl.ARRAY_BUFFER, bufData); gl.bufferData(gl.ARRAY_BUFFER, data, gl.DYNAMIC_DRAW);
+    gl.vertexAttribPointer(AT.p, 2, gl.FLOAT, false, 20, 0); gl.vertexAttribPointer(AT.h, 1, gl.FLOAT, false, 20, 8); gl.vertexAttribPointer(AT.g, 1, gl.FLOAT, false, 20, 12); gl.vertexAttribPointer(AT.al, 1, gl.FLOAT, false, 20, 16);
+    gl.bindBuffer(gl.ARRAY_BUFFER, bufCol); gl.vertexAttribPointer(AT.cb, 3, gl.FLOAT, false, 16, 0); gl.vertexAttribPointer(AT.fr, 1, gl.FLOAT, false, 16, 12);
+    gl.uniform2f(UN.r, W, H); gl.uniform1f(UN.s, size * dpr); gl.drawArrays(gl.POINTS, 0, N);
+    if (leafV > 0.01) { gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA); gl.uniform1f(UN.only, 1); gl.drawArrays(gl.POINTS, 0, N); }   // 열매만 한 번 더 그려 잎 위에 놓는다
+  }
+  // 움직임을 줄이라는 설정이면 다 멀어진 모습(나무 전체) 한 장만 그린다
+  function stillFrame() {
+    floodTargets(false, 0); setCam(3); ripe = 1; leafV = 1; segs.forEach(function (sg1) { sg1.g = 1; });
+    for (var i = 0; i < N; i++) {
+      var o = i * 5, q = i * 2, rl = role[i];
+      if (rl === 4) { data[o] = tFlood[q]; data[o + 1] = tFlood[q + 1]; data[o + 4] = 0; }
+      else if (rl <= 1) { var hr0 = true; data[o] = cam.cx + (sx2[i] + (hr0 ? rtx[i] : lx[i] * 0.7) - cam.fx) * cam.z; data[o + 1] = cam.cy + (sy2[i] + (hr0 ? rty[i] : ly[i] * 0.7) - cam.fy) * cam.z; data[o + 4] = 0.5; }
+      else { data[o] = cam.cx + (wx[i] - cam.fx) * cam.z; data[o + 1] = cam.cy + (wy[i] - cam.fy) * cam.z; data[o + 4] = rl === 3 ? 0.95 : 0.7; }
+      data[o + 2] = 0; data[o + 3] = rl === 3 ? 0.9 : 0;
+    }
+    draw(1, 1.5); dotEls.forEach(function (el, k) { el.classList.toggle('on', k === 4); }); copyEls.forEach(function (el, k) { el.classList.toggle('on', k === 4); });
+  }
+  function setup() {
+    alloc(); layout();
+    for (var i = 0; i < N; i++) { var a = rnd() * 6.2832, d = Math.max(W, H) * (0.3 + rnd() * 0.7), o = i * 5; data[o] = W / 2 + Math.cos(a) * d; data[o + 1] = H / 2 + Math.sin(a) * d; data[o + 4] = 0; }
+  }
+  function start() {
+    if (!innerWidth || !innerHeight) { setTimeout(start, 200); return; }
+    buildWorld(); setup(); born = performance.now();
+    if (still) { root.classList.add('still'); stillFrame(); } else { if ((CONFIG.autoplay.always || !seen()) && (window.scrollY || 0) < 10 && !location.hash) startAuto(); requestAnimationFrame(frame); }
+  }
+  start();
+})();
