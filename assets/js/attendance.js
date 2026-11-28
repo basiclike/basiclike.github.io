@@ -1,45 +1,43 @@
 // 수업 관리 화면(출석 체크, 출석 기록, 과제 확인, 학생 등록)의 동작. _layouts/class.html이 화면마다 싣고, .att의 data-att-view로 그 화면만 그린다.
-// 출석, 과제, 등록, 저장소는 이 브라우저(localStorage)에만 저장한다. 수강생과 회차는 아래의 예시 데이터다. 처음 동작은 TestClass의 출석부 v4다.
+// 수업 설정과 수강생 명단은 레이아웃이 넣은 #att-data에서 읽는다(lecture/04-deploy/class.yml, _private/roster.yml).
+// 출석, 과제, 등록, 저장소는 이 브라우저(localStorage)에만 저장한다. 처음 동작은 TestClass의 출석부 v4다.
 (() => {
-// ═════════ 설정 ═════════
-// 실제로 쓸 때 강사가 채운다: 등록 댓글을 받을 공개 저장소와, 그 저장소의 "학생 등록" 이슈 번호.
-// 비워 두면 학생 화면에 댓글 창이 나오지 않는다. 강사 화면에서 넣은 값은 이 브라우저에서만 쓴다.
-const CONFIG = { home: "", issue: 0 };
-
 const root = document.querySelector(".att");
 if (!root) return;
 const VIEW = root.dataset.attView;
 
-// ═════════ 데이터 ═════════
-const START = new Date(2026, 9, 3);         // 1회차 2026-10-03(토), 매주 토요일
-const SESSIONS = 9, TODAY = 8;              // 9회차가 오늘(11/28)
-const TASKS = [                             // 과제는 회차에 묶인다
-  { name: "데이터 정리", session: 1 }, { name: "프롬프트", session: 3 },
-  { name: "목업 페이지", session: 5 }, { name: "발표 자료", session: 7 },
-];
+// ═════════ 설정: 수업 설정과 수강생 명단 ═════════
+let DATA = {};
+try { DATA = JSON.parse(document.getElementById("att-data").textContent) || {}; } catch {}
+const CLS = DATA.class || {};
+const ROSTER = Array.isArray(DATA.roster) ? DATA.roster : [];
+// 등록 댓글을 받는 저장소와 이슈 번호. 강사가 과제 확인 화면에서 넣은 값이 있으면 그 브라우저에서는 그 값을 쓴다
+const CONFIG = { home: CLS.register_repo || "", issue: +CLS.register_issue || 0 };
+const KEY = "class." + (CLS.name || "default") + ".";          // 이 브라우저의 저장소 이름. 수업마다 따로 둔다
+
+const START = (() => { const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(CLS.start || "")); return m ? new Date(+m[1], +m[2] - 1, +m[3]) : new Date(); })();
+const SESSIONS = Math.max(1, +CLS.sessions || 1);
+const SECTIONS = Array.isArray(CLS.sections) ? CLS.sections.map(String) : [];
+const TASKS = (Array.isArray(CLS.tasks) ? CLS.tasks : []).map(t => ({ name: String(t.name || ""), session: Math.min(SESSIONS - 1, Math.max(0, (+t.session || 1) - 1)) }));
+// 오늘 회차: 날짜가 오늘을 지나지 않은 마지막 회차
+const TODAY = (() => { const now = new Date(); let i = 0; for (let k = 0; k < SESSIONS; k++) { const d = new Date(START); d.setDate(d.getDate() + 7 * k); if (d <= now) i = k; } return i; })();
 const ATT = { P: { name: "출석", mark: "✓" }, L: { name: "지각", mark: "지" }, A: { name: "결석", mark: "결" }, E: { name: "공결", mark: "공" }, U: { name: "미체크", mark: "–" } };
 const ATT_PILL = { P: "ok", L: "late", A: "absent", E: "excused", U: "" };
 const ORDER = ["P", "L", "A", "E"];
 const NEXT = { U: "P", P: "L", L: "A", A: "E", E: "P" };
-const SUB = { Y: { name: "제출", mark: "제출", next: "T", pill: "ok" }, T: { name: "늦게 제출", mark: "늦게", next: "N", pill: "late" },
+const SUB = { U: { name: "미확인", mark: "–", next: "Y", pill: "" }, Y: { name: "제출", mark: "제출", next: "T", pill: "ok" }, T: { name: "늦게 제출", mark: "늦게", next: "N", pill: "late" },
               N: { name: "미제출", mark: "미제출", next: "X", pill: "absent" }, X: { name: "면제", mark: "면제", next: "Y", pill: "excused" } };
 const PLACEHOLDER = { L: "몇 분 늦었나요", A: "결석 사유", E: "공결 사유 · 증빙" };
 
-const students = [
-  ["김하늘", "A", "PPPPLPPP", "YYTY"], ["이준호", "A", "PPAPPPLP", "YYNY"], ["박서연", "A", "PPPPPPPP", "YYYY"],
-  ["최민재", "A", "PLAPAPPL", "YNNY"], ["정유진", "A", "PPPPPPAA", "YYYN"], ["강도윤", "A", "LPPEPPPP", "YYYY"],
-  ["윤지아", "B", "PPPPPPPP", "YXYY"], ["임건우", "B", "PAPPPAPP", "YTNN"], ["한소율", "B", "PPPLPPPP", "YYYY"],
-  ["오세훈", "B", "PPPPPLPP", "YNYT"], ["서예린", "B", "APPPEPPP", "YYYY"], ["신우진", "B", "PPLPAPEA", "NYYY"],
-].map(([name, sec, att, sub], id) => ({
-  id, name, sec, att: [...att.split(""), "U"], sub: sub.split(""), notes: {},
-  subSrc: sub.split("").map(() => "sample"),          // sample(예시) · gh(GitHub) · manual(강사가 고침)
+const students = ROSTER.map((r, id) => ({
+  id, no: String(r.number || ""), name: String(r.name || r.number || ""), sec: String(r.section || ""),
+  att: Array(SESSIONS).fill("U"), sub: TASKS.map(() => "U"), notes: {},
+  subSrc: TASKS.map(() => "none"),                    // none(아직 읽지 않음) · gh(GitHub) · manual(강사가 고침)
   ghTask: [], repo: "", pages: "", ghUser: "", repoSrc: "", gh: { status: "none", commits: [], pushed: new Set() },
 }));
-{ const n = {}; students.forEach(s => { n[s.sec] = (n[s.sec] || 0) + 1; s.no = `${s.sec}-${String(n[s.sec]).padStart(2, "0")}`; }); }
-students[3].notes[1] = "10분 늦음"; students[3].notes[2] = "병원 진료"; students[4].notes[7] = "연락 안 됨"; students[5].notes[3] = "예비군 훈련";
 
 const state = { tab: VIEW, session: Math.min(SESSIONS - 1, Math.max(0, +(new URLSearchParams(location.search).get("session") ?? TODAY) || 0)), statusFilter: null, task: null, editRepos: false,
-                done: Array.from({ length: SESSIONS }, (_, i) => i !== TODAY), doneAt: {} };
+                done: Array.from({ length: SESSIONS }, () => false), doneAt: {} };
 
 // ═════════ 도우미 ═════════
 const $ = id => document.getElementById(id);
@@ -55,7 +53,7 @@ const esc = v => String(v ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": 
 // 확인 필요의 기준: 출석 체크 화면의 입력에서 읽고, 다른 화면에서는 저장해 둔 값을 쓴다
 const rules = () => {
   if ($("ruleAbs") && $("ruleStreak")) return { abs: +$("ruleAbs").value || 1, streak: +$("ruleStreak").value || 1 };
-  try { const r = JSON.parse(store.get("testclass.rules")); if (r && r.abs && r.streak) return r; } catch {}
+  try { const r = JSON.parse(store.get(KEY + "rules")); if (r && r.abs && r.streak) return r; } catch {}
   return { abs: 2, streak: 2 };
 };
 const filterBy = (q, sec) => students.filter(s => (!q || s.name.includes(q) || s.no.includes(q.toUpperCase())) && (!sec || s.sec === sec));
@@ -64,7 +62,7 @@ const link = (href, text) => `<a href="${esc(href)}" target="_blank" rel="noopen
 
 // 저장: 가능하면 localStorage, 막힌 환경(data: 주소, 사생활 모드)에서는 메모리에만
 const memStore = {}; let persistent = true;
-try { localStorage.setItem("testclass.probe", "1"); localStorage.removeItem("testclass.probe"); } catch { persistent = false; }
+try { localStorage.setItem(KEY + "probe", "1"); localStorage.removeItem(KEY + "probe"); } catch { persistent = false; }
 const store = {
   get: k => { try { return localStorage.getItem(k); } catch { return k in memStore ? memStore[k] : null; } },
   set: (k, v) => { try { localStorage.setItem(k, v); } catch { memStore[k] = v; } },
@@ -112,7 +110,7 @@ function readLimit(res) {
   if (rem !== null) gh.remaining = +rem; if (reset) gh.resetAt = new Date(+reset * 1000);
 }
 async function fetchCommits(repo, force) {
-  const key = "testclass.gh." + repo;
+  const key = KEY + "gh." + repo;
   if (!force) { try { const c = JSON.parse(store.get(key)); if (c && Date.now() - c.at < GH_TTL) return { status: commitStatus(c.commits), commits: c.commits }; } catch {} }
   const commits = [];
   for (let page = 1; page <= 3; page++) {
@@ -164,27 +162,27 @@ async function loadGitHub(force) {
 
 // ═════════ 출석과 과제 저장: 화면이 나뉘어서, 한 화면에서 고친 것을 다른 화면이 읽는다 ═════════
 function saveState() {
-  store.set("testclass.state", JSON.stringify({ done: state.done, doneAt: state.doneAt,
-    students: students.map(s => ({ att: s.att, notes: s.notes, sub: s.sub, subSrc: s.subSrc })) }));
-  if ($("ruleAbs") && $("ruleStreak")) store.set("testclass.rules", JSON.stringify(rules()));
+  store.set(KEY + "state", JSON.stringify({ done: state.done, doneAt: state.doneAt,
+    students: students.map(s => ({ no: s.no, att: s.att, notes: s.notes, sub: s.sub, subSrc: s.subSrc })) }));
+  if ($("ruleAbs") && $("ruleStreak")) store.set(KEY + "rules", JSON.stringify(rules()));
 }
 function loadState() {
   try {
-    const d = JSON.parse(store.get("testclass.state")); if (!d) return;
+    const d = JSON.parse(store.get(KEY + "state")); if (!d) return;
     if (Array.isArray(d.done) && d.done.length === SESSIONS) state.done = d.done;
     if (d.doneAt) state.doneAt = d.doneAt;
-    (d.students || []).forEach((x, i) => { const s = students[i]; if (!s || !x) return;
+    (d.students || []).forEach(x => { const s = x && students.find(y => y.no === x.no); if (!s) return;
       if (Array.isArray(x.att) && x.att.length === SESSIONS) s.att = x.att;
       if (Array.isArray(x.sub) && x.sub.length === TASKS.length) { s.sub = x.sub; s.subSrc = x.subSrc || s.subSrc; }
       if (x.notes) s.notes = x.notes; });
   } catch {}
-  try { const r = JSON.parse(store.get("testclass.rules")); if (r && $("ruleAbs")) { $("ruleAbs").value = r.abs; $("ruleStreak").value = r.streak; } } catch {}
+  try { const r = JSON.parse(store.get(KEY + "rules")); if (r && $("ruleAbs")) { $("ruleAbs").value = r.abs; $("ruleStreak").value = r.streak; } } catch {}
 }
 
 // ═════════ 저장소 정보 저장 ═════════
-function saveRepos() { store.set("testclass.repos", JSON.stringify(students.map(s => ({ repo: s.repo, pages: s.pages, ghUser: s.ghUser, repoSrc: s.repoSrc })))); }
+function saveRepos() { store.set(KEY + "repos", JSON.stringify(students.map(s => ({ no: s.no, repo: s.repo, pages: s.pages, ghUser: s.ghUser, repoSrc: s.repoSrc })))); }
 function loadRepos() {
-  try { (JSON.parse(store.get("testclass.repos")) || []).forEach((r, i) => { if (students[i] && r && r.repo) Object.assign(students[i], r); }); } catch {}
+  try { (JSON.parse(store.get(KEY + "repos")) || []).forEach(r => { const s = r && students.find(y => y.no === r.no); if (s && r.repo) { const { no, ...rest } = r; Object.assign(s, rest); } }); } catch {}
 }
 function setRepo(s, repo, src) {
   if (s.repo !== repo) { s.repo = repo; s.gh = { status: "none", commits: [], pushed: new Set() }; s.ghTask = []; }
@@ -299,7 +297,7 @@ function renderTasks() {
       <span class="sub">${short(dateOf(t.session))}(${t.session + 1}회차) 마감 · 늦게 ${c.T} · 미제출 ${c.N}</span>
       <span class="bar"><span style="width:${pct(c.Y + c.T, c.due)}%"></span></span></button>`; }).join("");
 
-  $("legendTasks").innerHTML = ["Y", "T", "N", "X"].map(k => `<span><span class="cell task s-${k}">${SUB[k].mark}</span>${SUB[k].name}</span>`).join("")
+  $("legendTasks").innerHTML = ["U", "Y", "T", "N", "X"].map(k => `<span><span class="cell task s-${k}">${SUB[k].mark}</span>${SUB[k].name}</span>`).join("")
     + `<span><span class="cell task s-Y gh">제출</span>GitHub에서 읽음</span>`;
 
   const rows = filterBy($("search3").value.trim(), $("section3").value);
@@ -317,7 +315,7 @@ function renderTasks() {
     $("taskBody").innerHTML = rows.map(s => {
       const k = s.sub[i], c = s.ghTask[i], src = s.subSrc[i];
       const commit = src === "gh" && c ? `${short(new Date(c.date))} ${hhmm(new Date(c.date))} · ${link(c.url, c.sha)} <span class="sub-text" style="margin:0">${esc(c.msg)}</span>`
-        : src === "manual" ? `<span class="muted">강사가 직접 적음</span>` : src === "gh" ? `<span class="muted">${short(dateOf(t.session))}~다음 회차 전 커밋 없음</span>` : `<span class="muted">예시 값 · GitHub 안 읽음</span>`;
+        : src === "manual" ? `<span class="muted">강사가 직접 적음</span>` : src === "gh" ? `<span class="muted">${short(dateOf(t.session))}~다음 회차 전 커밋 없음</span>` : `<span class="muted">아직 GitHub에서 읽지 않음</span>`;
       return `<tr><td class="name"><button class="name-btn" data-open="${s.id}">${s.name}</button><span class="sub-text">${s.no}</span></td>
         <td>${pill(SUB[k].pill, SUB[k].name)}</td><td class="a-wrap">${commit}</td><td>${workLinks(s)}</td><td class="c">${taskCell(s, i)}</td></tr>`;
     }).join("") || `<tr><td class="a-empty" colspan="5">조건에 맞는 수강생이 없습니다</td></tr>`;
@@ -331,7 +329,7 @@ function taskCell(s, i) {
 
 // ═════════ 학생 등록 ═════════
 const reg = { list: [], latest: {}, loadedAt: null, error: "", mounted: null };
-const cfg = () => ({ home: parseRepo(store.get("testclass.home") || CONFIG.home || "") || "", issue: +(store.get("testclass.issue") || CONFIG.issue || 0) });
+const cfg = () => ({ home: parseRepo(store.get(KEY + "home") || CONFIG.home || "") || "", issue: +(store.get(KEY + "issue") || CONFIG.issue || 0) });
 
 // 학생 화면
 function meForm() {
@@ -416,7 +414,7 @@ function parseLine(text) {
 async function loadRegistrations() {
   const home = parseRepo($("cfgHome").value), issue = +$("cfgIssue").value;
   if (!home || !issue) { reg.error = "등록 댓글을 받는 저장소와 이슈 번호를 넣으세요."; return render(); }
-  store.set("testclass.home", home); store.set("testclass.issue", String(issue));
+  store.set(KEY + "home", home); store.set(KEY + "issue", String(issue));
   reg.error = ""; $("regLoad").disabled = true; $("regLoad").textContent = "불러오는 중…";
   try {
     const comments = [];
@@ -460,7 +458,7 @@ function applyRegistrations() {
     setRepo(s, r.repo, "reg"); s.ghUser = r.author; s.pages = r.pages || "";
   });
   saveRepos();
-  store.set("testclass.reg", JSON.stringify(reg.list));
+  store.set(KEY + "reg", JSON.stringify(reg.list));
 }
 function renderRegister() {
   if (!$("meNo").options.length) $("meNo").innerHTML = students.map(s => `<option value="${s.no}">${s.no}</option>`).join("");
@@ -523,7 +521,9 @@ function toast(msg) { $("toast").textContent = msg; $("toast").classList.add("sh
 function render() {
   ({ check: renderCheck, record: renderRecord, tasks: () => { renderTasks(); renderRegAdmin(); }, register: renderRegister })[state.tab]();
   saveState();
-  if ($("attDesc")) $("attDesc").textContent = `수강생 ${students.length}명 · 매주 토요일 ${SESSIONS}회차 · ${short(dateOf(0))} 시작 · 기록은 이 브라우저에만 남습니다`;
+  if ($("attDesc")) $("attDesc").textContent = students.length
+    ? `${CLS.name || "수업"} · 수강생 ${students.length}명 · ${SESSIONS}회차 · ${short(dateOf(0))}(${"일월화수목금토"[dateOf(0).getDay()]}) 시작 · 기록은 이 브라우저에만 남습니다`
+    : "수강생 명단이 없습니다. lecture/04-deploy/_private/roster.yml에 명단을 적고 다시 빌드합니다";
   const a = document.activeElement;
   if (!(a && a.closest && a.closest("#panel input"))) fillPanel();
 }
@@ -600,12 +600,13 @@ on("scrim", "click", closePanel);
 on("closePanel", "click", closePanel);
 document.addEventListener("keydown", e => { if (e.key === "Escape") closePanel(); });
 
-// ═════════ 시작: 저장해 둔 출석, 과제, 등록, 저장소, 커밋을 네트워크 없이 다시 적용한다 ═════════
+// ═════════ 시작: 분반을 채우고, 저장해 둔 출석, 과제, 등록, 저장소, 커밋을 네트워크 없이 다시 적용한다 ═════════
+["section", "section2", "section3"].forEach(id => { const el = $(id); if (el) SECTIONS.forEach(x => el.insertAdjacentHTML("beforeend", `<option value="${esc(x)}">${esc(x)}반</option>`)); });
 loadState();
 loadRepos();
-try { const saved = JSON.parse(store.get("testclass.reg")); if (Array.isArray(saved) && saved.length) { reg.list = saved.map(r => ({ ...r, at: new Date(r.at) })); applyRegistrations(); } } catch {}
+try { const saved = JSON.parse(store.get(KEY + "reg")); if (Array.isArray(saved) && saved.length) { reg.list = saved.map(r => ({ ...r, at: new Date(r.at) })); applyRegistrations(); } } catch {}
 students.filter(s => s.repo).forEach(s => {
-  try { const c = JSON.parse(store.get("testclass.gh." + s.repo)); if (c) { s.gh.status = commitStatus(c.commits); s.gh.commits = c.commits; applyGitHub(s); gh.loadedAt = new Date(c.at); } } catch {}
+  try { const c = JSON.parse(store.get(KEY + "gh." + s.repo)); if (c) { s.gh.status = commitStatus(c.commits); s.gh.commits = c.commits; applyGitHub(s); gh.loadedAt = new Date(c.at); } } catch {}
 });
 render();
 })();
