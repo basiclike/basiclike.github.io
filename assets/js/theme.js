@@ -1,5 +1,5 @@
 /* 화면 테마: 헥사(기본), 문서, 클로드. 사이드바 아래의 버튼(.theme-opt)으로 고르고, 고른 값은 이 브라우저에 저장해 유지한다.
-   기본(헥사)을 고르면 저장한 값을 지운다. 로그아웃 버튼을 누르면 저장한 테마도 지워 헥사로 돌아간다. 그리기 전에 테마를 붙이는 일은 _layouts/default.html head의 짧은 스크립트가 한다. */
+   기본(헥사)을 고르면 저장한 값을 지운다. 로그아웃 버튼을 누르면 저장한 테마와 시작 화면을 보지 않기로 한 설정(site-intro)도 지운다. 그리기 전에 테마를 붙이는 일은 _layouts/default.html head의 짧은 스크립트가 한다. */
 (function () {
   var KEY = 'site-theme', DEFAULT = 'hex', THEMES = ['hex', 'paper', 'claude'], root = document.documentElement;
 
@@ -21,10 +21,10 @@
     var b = e.target.closest && e.target.closest('.theme-opt');
     if (b) apply(b.getAttribute('data-theme-value'));
   });
-  // site.js의 로그아웃(비밀번호를 지우고 다시 연다)보다 먼저 테마를 지운다
+  // site.js의 로그아웃(비밀번호를 지우고 다시 연다)보다 먼저 테마와 시작 화면의 설정을 지운다
   document.addEventListener('click', function (e) {
     if (e.target.closest && e.target.closest('.logout-btn')) {
-      try { localStorage.removeItem(KEY); } catch (err) {}
+      try { localStorage.removeItem(KEY); localStorage.removeItem('site-intro'); } catch (err) {}
     }
   }, true);
   mark();
