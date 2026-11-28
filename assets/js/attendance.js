@@ -179,6 +179,42 @@ function loadState() {
   try { const r = JSON.parse(store.get(KEY + "rules")); if (r && $("ruleAbs")) { $("ruleAbs").value = r.abs; $("ruleStreak").value = r.streak; } } catch {}
 }
 
+// ═════════ 기록 파일: 이 브라우저의 기록을 파일로 내보내고 가져온다(다른 PC로 옮기거나 남겨 둘 때) ═════════
+// 파일에는 수강생의 이름을 넣지 않고 번호로 맞춘다. 가져올 때는 같은 번호의 수강생에게만 넣는다
+function exportRecords() {
+  const data = { format: 1, class: CLS.name || "", exportedAt: new Date().toISOString(), sessions: SESSIONS, tasks: TASKS.map(t => t.name),
+    done: state.done, doneAt: state.doneAt, rules: rules(),
+    students: students.map(s => ({ no: s.no, att: s.att, notes: s.notes, sub: s.sub, subSrc: s.subSrc, repo: s.repo, pages: s.pages, ghUser: s.ghUser, repoSrc: s.repoSrc })) };
+  const d = new Date(), ymd = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}`;
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }));
+  a.download = `출석기록-${CLS.name || "수업"}-${ymd}.json`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  toast(`기록을 파일로 내보냈습니다(${students.length}명)`);
+}
+async function importRecords(file) {
+  let d;
+  try { d = JSON.parse(await file.text()); } catch { return toast("가져오지 못했습니다. 내보낸 기록 파일인지 확인하세요"); }
+  if (!d || d.format !== 1 || !Array.isArray(d.students)) return toast("가져오지 못했습니다. 내보낸 기록 파일인지 확인하세요");
+  if (d.class && CLS.name && d.class !== CLS.name && !confirm(`이 파일은 "${d.class}"의 기록입니다. 지금 수업("${CLS.name}")에 가져올까요?`)) return;
+  let n = 0;
+  d.students.forEach(x => {
+    const s = x && students.find(y => y.no === x.no); if (!s) return;
+    n++;
+    if (Array.isArray(x.att) && x.att.length === SESSIONS) s.att = x.att;
+    if (x.notes && typeof x.notes === "object") s.notes = x.notes;
+    if (Array.isArray(x.sub) && x.sub.length === TASKS.length) { s.sub = x.sub; if (Array.isArray(x.subSrc)) s.subSrc = x.subSrc; }
+    if (x.repo !== undefined) { setRepo(s, x.repo || "", x.repoSrc || ""); s.pages = x.pages || ""; s.ghUser = x.ghUser || ""; }
+  });
+  if (Array.isArray(d.done) && d.done.length === SESSIONS) state.done = d.done;
+  if (d.doneAt && typeof d.doneAt === "object") state.doneAt = d.doneAt;
+  if (d.rules && d.rules.abs && d.rules.streak) store.set(KEY + "rules", JSON.stringify(d.rules));
+  saveRepos(); render();
+  const skipped = d.students.length - n;
+  toast(`${n}명의 기록을 가져왔습니다${skipped ? ` · 명단에 없는 번호 ${skipped}개는 건너뛰었습니다` : ""}`);
+}
+
 // ═════════ 저장소 정보 저장 ═════════
 function saveRepos() { store.set(KEY + "repos", JSON.stringify(students.map(s => ({ no: s.no, repo: s.repo, pages: s.pages, ghUser: s.ghUser, repoSrc: s.repoSrc })))); }
 function loadRepos() {
@@ -596,6 +632,8 @@ on("meVerify", "click", verifyMine);
 on("meCopy", "click", copyLine);
 on("regLoad", "click", loadRegistrations);
 on("editRepos", "click", () => { state.editRepos = !state.editRepos; render(); });
+on("exportRec", "click", exportRecords);
+on("importRec", "change", e => { const f = e.target.files && e.target.files[0]; if (f) importRecords(f); e.target.value = ""; });
 on("scrim", "click", closePanel);
 on("closePanel", "click", closePanel);
 document.addEventListener("keydown", e => { if (e.key === "Escape") closePanel(); });
